@@ -10,14 +10,6 @@
 ###< symfony/framework-bundle ###
 
 ###> Datos del entorno de trabajo (no versionar) ###
-# Archivos subidos (logos de clientes, firmas de médicos)
-/public/static/upload/
-
-# Imágenes con marca del laboratorio (reemplazar con las propias)
-/public/static/images/header.jpg
-/public/static/images/footer.jpg
-/public/static/images/default.png
-
 # Assets del sistema legacy que ya no se usan (el frontend usa Bootstrap 5 por CDN)
 /public/bootstrap/
 /public/css/
