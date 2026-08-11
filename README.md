@@ -13,7 +13,7 @@ Sistema web de **resultados de laboratorio en línea** (port Symfony de un siste
 
 ## Requisitos
 
-- PHP 8.2+ con extensiones: `pdo_mysql`, `pdo_pgsql`, `fileinfo`, `mbstring`, `gd` (para PDF), `ftp` (opcional, para descarga de resultados publicados).
+- **Symfony 6.4 LTS** con PHP 8.2+ y extensiones: `pdo_mysql`, `pdo_pgsql`, `fileinfo`, `mbstring`, `gd` (para PDF), `ftp` (opcional, para descarga de resultados publicados).
 - Composer 2.
 - MySQL y PostgreSQL (o solo MySQL si los resultados se sirven desde otra vía).
 

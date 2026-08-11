@@ -5,23 +5,27 @@ namespace App\Controller;
 use App\Service\DomainsService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 class HomeController extends AbstractController
 {
-    public function __construct(private DomainsService $domains, private SessionInterface $session)
+    public function __construct(private DomainsService $domains, private RequestStack $requestStack)
     {
     }
 
-    /**
-     * @Route("/", name="root")
-     */
+    private function session(): SessionInterface
+    {
+        return $this->requestStack->getSession();
+    }
+
+    #[Route('/', name: 'root')]
     public function index(Request $request): Response
     {
         // Simula la lógica legacy: requiere sesión 'user'
-        $user = $this->session->get('user');
+        $user = $this->session()->get('user');
         if (!$user) {
             return $this->render('security/login.html.twig');
         }
@@ -38,13 +42,11 @@ class HomeController extends AbstractController
         ]);
     }
 
-    /**
-     * @Route("/admin", name="admin")
-     */
+    #[Route('/admin', name: 'admin')]
     public function admin(): Response
     {
         // Compatibilidad: usamos 'user' en sesión y validamos que sea admin
-        $user = $this->session->get('user');
+        $user = $this->session()->get('user');
         if (!$user || ($user['type'] ?? '') !== 'admin') {
             return $this->render('security/login.html.twig');
         }

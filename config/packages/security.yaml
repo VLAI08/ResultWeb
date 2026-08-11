@@ -8,7 +8,7 @@ security:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
         main:
-            lazy: true
-            anonymous: true
+            pattern: ^/
+            security: false
 
     access_control: []

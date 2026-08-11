@@ -6,8 +6,6 @@ framework:
     csrf_protection: true
     form: true
     assets: true
-    validation:
-        enable_annotations: true
     session:
         handler_id: null
     router:
