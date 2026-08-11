@@ -1,0 +1,312 @@
+{% extends 'modern/base.html.twig' %}
+{% block title %}Inicio - Resultados en Línea{% endblock %}
+{% block content %}
+{% set sessionUser = app.session.get('user') %}
+<div class="page-head">
+    <div>
+        <h1><i class="bi bi-clipboard2-pulse text-primary me-2"></i>{% if sessionUser.type == 'company' %}Consultar resultados{% else %}Mis resultados{% endif %}</h1>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item active" aria-current="page">Inicio</li></ol></nav>
+    </div>
+</div>
+{% if sessionUser.type != 'admin' %}
+<div class="row g-3 mb-3" id="stats-row">
+    {% if sessionUser.type == 'company' %}
+    <div class="col-6 col-md-4">
+        <div class="card"><div class="card-body py-3 stat-card">
+            <div class="stat-icon blue"><i class="bi bi-journal-text"></i></div>
+            <div><div class="fs-4 fw-bold" id="stat-requests">—</div><div class="small text-muted">Solicitudes (30 días)</div></div>
+        </div></div>
+    </div>
+    <div class="col-6 col-md-4">
+        <div class="card"><div class="card-body py-3 stat-card">
+            <div class="stat-icon green"><i class="bi bi-people"></i></div>
+            <div><div class="fs-4 fw-bold" id="stat-patients">—</div><div class="small text-muted">Pacientes</div></div>
+        </div></div>
+    </div>
+    <div class="col-6 col-md-4">
+        <div class="card"><div class="card-body py-3 stat-card">
+            <div class="stat-icon purple"><i class="bi bi-clipboard2-pulse"></i></div>
+            <div><div class="fs-4 fw-bold" id="stat-exams">—</div><div class="small text-muted">Exámenes</div></div>
+        </div></div>
+    </div>
+    {% else %}
+    <div class="col-6 col-md-3">
+        <div class="card"><div class="card-body py-3 stat-card">
+            <div class="stat-icon blue"><i class="bi bi-journal-text"></i></div>
+            <div><div class="fs-4 fw-bold" id="stat-requests">—</div><div class="small text-muted">Solicitudes</div></div>
+        </div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card"><div class="card-body py-3 stat-card">
+            <div class="stat-icon purple"><i class="bi bi-clipboard2-pulse"></i></div>
+            <div><div class="fs-4 fw-bold" id="stat-exams">—</div><div class="small text-muted">Exámenes</div></div>
+        </div></div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+<div class="row g-3">
+    <div class="col-12">
+        <ul class="nav nav-pills mb-3" id="mainTabs">
+            {% if sessionUser.type != 'company' %}
+            <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tab-mine">Mis resultados</button></li>
+            {% endif %}
+            {% if sessionUser.type == 'admin' or sessionUser.type == 'company' %}
+            <li class="nav-item"><button class="nav-link {% if sessionUser.type == 'company' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#tab-search">Buscar resultados</button></li>
+            {% endif %}
+        </ul>
+    </div>
+
+    {% if sessionUser.type != 'company' %}
+    <div class="col-12 tab-pane fade show active" id="tab-mine">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-file-text text-primary me-1"></i> Mis resultados</span>
+                <button class="btn btn-sm btn-outline-primary" id="btn-refresh-mine"><i class="bi bi-arrow-clockwise"></i> Actualizar</button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle" id="mine-table">
+                        <thead class="v-heading">
+                            <tr><th>Solicitud</th><th>Fecha recepción</th><th>Exámenes</th><th>Empresa</th><th>Estado</th><th></th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <div class="text-center text-muted py-5 d-none" id="mine-empty">
+                        <span class="empty-state"><i class="bi bi-file-text"></i>No tiene resultados disponibles.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if sessionUser.type == 'admin' or sessionUser.type == 'company' %}
+    <div class="col-12 tab-pane fade {% if sessionUser.type == 'company' %}show active{% endif %}" id="tab-search">
+        <div class="card mb-3">
+            <div class="card-header"><i class="bi bi-search text-primary me-1"></i> Búsqueda de pacientes</div>
+            <div class="card-body">
+                <form id="search-form" class="row g-2">
+                    <div class="col-md-2">
+                        <select class="form-select form-select-sm" name="identification_type">
+                            <option value="">Tipo doc.</option>
+                            {% for t in identification_types %}
+                            <option value="{{ t.valor }}">{{ t.titulo }} ({{ t.valor }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2"><input type="text" class="form-control form-control-sm" name="identification_number" placeholder="Identificación"></div>
+                    <div class="col-md-2"><input type="text" class="form-control form-control-sm" name="name" placeholder="Nombre"></div>
+                    <div class="col-md-2"><input type="text" class="form-control form-control-sm" name="last_name" placeholder="Apellido"></div>
+                    <div class="col-md-2"><input type="date" class="form-control form-control-sm" name="start_date"></div>
+                    <div class="col-md-2"><input type="date" class="form-control form-control-sm" name="end_date"></div>
+                    <div class="col-md-12 d-flex gap-2">
+                        <button class="btn btn-primary btn-sm" type="submit" id="search-btn"><i class="bi bi-search"></i> Buscar</button>
+                        <button class="btn btn-outline-secondary btn-sm" type="button" id="btn-clear-search">Limpiar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle" id="search-table">
+                        <thead class="v-heading">
+                            <tr><th>Identificación</th><th>Nombre</th><th>Teléfono</th><th>Dirección</th><th></th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <div class="text-center text-muted py-5 d-none" id="search-empty">
+                        <span class="empty-state"><i class="bi bi-search"></i>Realice una búsqueda para ver resultados.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal detalle de resultados -->
+<div class="modal fade" id="detail-modal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detail-title"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detail-body"></div>
+            <div class="modal-footer">
+                <a href="#" class="btn btn-success" id="detail-pdf"><i class="bi bi-file-earmark-pdf"></i> Descargar PDF</a>
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+{% set sessionUser = app.session.get('user') %}
+<script>
+(function () {
+    // Estadísticas del dashboard según el perfil
+    var statsRow = document.getElementById('stats-row');
+    if (statsRow) {
+        window.apiFetch('/api/dashboard', { silent: true })
+            .then(function (d) {
+                function fmt(n) {
+                    n = n || 0;
+                    if (n >= 1000000) { return (n / 1000000).toFixed(1).replace('.', ',') + ' M'; }
+                    if (n >= 1000) { return (n / 1000).toFixed(1).replace('.', ',') + ' k'; }
+                    return String(n);
+                }
+                var el = document.getElementById('stat-requests');
+                if (el) { el.textContent = fmt(d.requests); }
+                el = document.getElementById('stat-patients');
+                if (el) { el.textContent = fmt(d.patients); }
+                el = document.getElementById('stat-exams');
+                if (el) { el.textContent = fmt(d.exams); }
+            })
+            .catch(function () {});
+    }
+
+    function downloadPdf(requestCode, isPrevalidated, url, btn) {
+        if (btn) { btn.disabled = true; }
+        window.apiFetch('/valid_result?_solicitud=' + encodeURIComponent(requestCode), { silent: true })
+            .then(function (res) {
+                if (res.state === 1) {
+                    var q = '?prevalidated=' + (isPrevalidated ? '1' : '0');
+                    if (url && url !== '' && url !== 'no') { q += '&url=' + encodeURIComponent(url); }
+                    window.open('/result/pdf/' + encodeURIComponent(requestCode) + q, '_blank');
+                } else {
+                    window.showToast(res.msg || 'No puede descargar este resultado, debe estar al día con el pago.', 'warning');
+                }
+            })
+            .catch(function () { window.showToast('Error validando el resultado.', 'danger'); })
+            .finally(function () { if (btn) { btn.disabled = false; } });
+    }
+
+    function openDetail(requestCode, prevalidated) {
+        var q = prevalidated !== undefined && prevalidated !== '' ? '?prevalidated=' + prevalidated : '';
+        window.apiFetch('/result/detail/' + encodeURIComponent(requestCode) + q, { silent: true })
+            .then(function (d) {
+                if (d.message) { window.showToast(d.message, 'warning'); return; }
+                var html = '';
+                if (d.prevalidated) {
+                    html += '<div class="alert alert-warning py-2"><b>Validado Preliminar</b></div>';
+                }
+                html += '<table class="table table-sm mb-3"><tbody>' +
+                    '<tr><th class="w-25">Paciente</th><td>' + window.esc(d.patient_name) + '</td>' +
+                    '<th class="w-25">Solicitud</th><td>' + window.esc(d.request_code) + '</td></tr>' +
+                    '<tr><th>Identificación</th><td>' + window.esc(d.identification_type + ' ' + d.identification_number) + '</td>' +
+                    '<th>Fecha</th><td>' + window.esc(d.reception_date) + '</td></tr>' +
+                    '<tr><th>Edad</th><td>' + window.esc(d.age + ' ' + d.age_unit) + '</td>' +
+                    '<th>Empresa</th><td>' + window.esc(d.client_name) + '</td></tr></tbody></table>';
+                (d.descriptive_texts || []).forEach(function (dt) {
+                    html += '<h6 class="mt-3 text-primary">' + window.esc(dt.exam_name) + '</h6>' +
+                        '<div style="white-space: pre-line;">' + window.esc(dt.descriptive_text) + '</div>';
+                });
+                d.sections.forEach(function (section) {
+                    html += '<h6 class="mt-3 text-primary">' + window.esc(section.name) + '</h6>';
+                    section.exams.forEach(function (exam) {
+                        html += '<b>' + window.esc(exam.exam_name) + '</b>';
+                        if (exam.processing_date || exam.validation_date) {
+                            html += '<div class="small text-muted">' +
+                                (exam.processing_date ? 'Procesado: ' + window.esc(exam.processing_date + (exam.processing_time ? ' ' + exam.processing_time : '')) + ' ' : '') +
+                                (exam.validation_date ? 'Validado: ' + window.esc(exam.validation_date + (exam.validation_time ? ' ' + exam.validation_time : '')) : '') +
+                                '</div>';
+                        }
+                        html += '<table class="table table-sm table-striped"><tbody>';
+                        exam.details.forEach(function (det) {
+                            if (det.ima_result) { html += '<tr><td colspan="3">' + window.esc(det.ima_result) + '</td></tr>'; }
+                            html += '<tr><td>' + window.esc(det.analito) + '</td><td><b>' + window.esc(det.result) + '</b></td><td>' + window.esc(det.units) + '</td></tr>';
+                        });
+                        html += '</tbody></table>';
+                    });
+                });
+                document.getElementById('detail-title').textContent = 'Resultados - Solicitud ' + d.request_code;
+                document.getElementById('detail-body').innerHTML = html;
+                var pdf = document.getElementById('detail-pdf');
+                pdf.onclick = function (e) { e.preventDefault(); downloadPdf(requestCode, d.prevalidated, d.exams, pdf); };
+                new bootstrap.Modal(document.getElementById('detail-modal')).show();
+            })
+            .catch(function () { window.showToast('Error consultando el detalle.', 'danger'); });
+    }
+
+    function renderMine(items) {
+        var tbody = document.querySelector('#mine-table tbody');
+        tbody.innerHTML = '';
+        document.getElementById('mine-empty').classList.toggle('d-none', items.length > 0);
+        items.forEach(function (r) {
+            var tr = document.createElement('tr');
+            tr.innerHTML = '<td class="fw-semibold">' + window.esc(r.request_code) + '</td>' +
+                '<td>' + window.esc(r.reception_date) + '</td>' +
+                '<td>' + window.esc(r.exams) + '</td>' +
+                '<td>' + window.esc(r.client_code) + '</td>' +
+                '<td>' + (r.prevalidated ? '<span class="badge badge-soft-warning">Validado Preliminar</span>' : '<span class="badge badge-soft-success">Validado</span>') + '</td>' +
+                '<td class="text-end"><button class="btn btn-sm btn-outline-primary" data-code="' + window.esc(r.request_code) + '" data-prevalidated="' + (r.prevalidated ? '1' : '0') + '" data-url="' + window.esc(r.url || 'no') + '"><i class="bi bi-eye"></i> Ver</button>' +
+                '<button class="btn btn-sm btn-outline-success ms-1" data-pdf="' + window.esc(r.request_code) + '" data-prevalidated="' + (r.prevalidated ? '1' : '0') + '" data-url="' + window.esc(r.url || 'no') + '"><i class="bi bi-download"></i> PDF</button></td>';
+            tbody.appendChild(tr);
+        });
+    }
+
+    function loadMine() {
+        window.apiFetch('/resultCrud', { silent: true })
+            .then(function (res) { renderMine(res.items || []); })
+            .catch(function () {});
+    }
+
+    var tbody = document.querySelector('#mine-table tbody');
+    if (tbody) {
+        tbody.addEventListener('click', function (e) {
+            var btn = e.target.closest('button');
+            if (!btn) { return; }
+            if (btn.dataset.code) { openDetail(btn.dataset.code, btn.dataset.prevalidated); }
+            if (btn.dataset.pdf) { downloadPdf(btn.dataset.pdf, btn.dataset.prevalidated === '1', btn.dataset.url, btn); }
+        });
+        loadMine();
+    }
+    var refresh = document.getElementById('btn-refresh-mine');
+    if (refresh) { refresh.addEventListener('click', loadMine); }
+
+    var searchForm = document.getElementById('search-form');
+    if (searchForm) {
+        var sTable = document.querySelector('#search-table tbody');
+        searchForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var btn = document.getElementById('search-btn');
+            var q = new URLSearchParams(new FormData(searchForm));
+            window.setLoading(btn, true, 'Buscando...');
+            window.apiFetch('/results/labs?' + q.toString())
+                .then(function (res) {
+                    sTable.innerHTML = '';
+                    document.getElementById('search-empty').classList.toggle('d-none', (res.items || []).length > 0);
+                    if (res.error) { window.showToast(res.error, 'warning'); }
+                    (res.items || []).forEach(function (p) {
+                        var tr = document.createElement('tr');
+                        tr.innerHTML = '<td>' + window.esc(p.identification_number) + '</td>' +
+                            '<td class="fw-semibold">' + window.esc(p.full_name) + '</td>' +
+                            '<td>' + window.esc(p.phone) + '</td>' +
+                            '<td>' + window.esc(p.address) + '</td>' +
+                            '<td class="text-end"><button class="btn btn-sm btn-outline-primary" data-search="' + window.esc(p.identification_number) + '|' + window.esc(p.identification_type) + '"><i class="bi bi-search"></i> Ver solicitudes</button></td>';
+                        tr.querySelector('button').addEventListener('click', function () {
+                            var parts = this.dataset.search.split('|');
+                            var q2 = new URLSearchParams({ identification: parts[0], type_doc: parts[1] });
+                            window.apiFetch('/resultCrud?' + q2.toString(), { silent: true })
+                                .then(function (res) {
+                                    if (!res.items || !res.items.length) { window.showToast('El paciente no tiene solicitudes disponibles.', 'warning'); return; }
+                                    var opts = res.items.map(function (r) { return r.request_code; });
+                                    var code = prompt('Solicitudes disponibles:\n' + opts.join('\n') + '\n\nIngrese el código de solicitud:');
+                                    if (code) { openDetail(code); }
+                                })
+                                .catch(function () {});
+                        });
+                        sTable.appendChild(tr);
+                    });
+                })
+                .catch(function () {})
+                .finally(function () { window.setLoading(btn, false); });
+        });
+        document.getElementById('btn-clear-search').addEventListener('click', function () { searchForm.reset(); sTable.innerHTML = ''; });
+    }
+})();
+</script>
+{% endblock %}

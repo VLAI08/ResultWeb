@@ -1,0 +1,363 @@
+{% extends 'modern/base.html.twig' %}
+{% block title %}Pacientes - Resultados en Línea{% endblock %}
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1><i class="bi bi-people text-primary me-2"></i>Pacientes</h1>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ path('root') }}">Panel</a></li><li class="breadcrumb-item active" aria-current="page">Pacientes</li></ol></nav>
+    </div>
+    <span class="stat-badge" id="patients-stat"><i class="bi bi-people"></i><span id="patients-count">Cargando...</span></span>
+</div>
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+        <div class="card"><div class="card-body py-3 stat-card">
+            <div class="stat-icon blue"><i class="bi bi-people"></i></div>
+            <div><div class="fs-4 fw-bold" id="stat-patients">—</div><div class="small text-muted">Pacientes</div></div>
+        </div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card"><div class="card-body py-3 stat-card">
+            <div class="stat-icon green"><i class="bi bi-hospital"></i></div>
+            <div><div class="fs-4 fw-bold" id="stat-clients">—</div><div class="small text-muted">Clientes</div></div>
+        </div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card"><div class="card-body py-3 stat-card">
+            <div class="stat-icon purple"><i class="bi bi-clipboard-pulse"></i></div>
+            <div><div class="fs-4 fw-bold" id="stat-firms">—</div><div class="small text-muted">Firmas</div></div>
+        </div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card"><div class="card-body py-3 stat-card">
+            <div class="stat-icon amber"><i class="bi bi-gear"></i></div>
+            <div><div class="fs-4 fw-bold" id="stat-domains">—</div><div class="small text-muted">Parámetros</div></div>
+        </div></div>
+    </div>
+</div>
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span><i class="bi bi-people text-primary me-1"></i> Pacientes</span>
+        <div class="d-flex gap-2">
+            <input type="text" class="form-control form-control-sm" id="patients-search" placeholder="Buscar paciente..." style="width: 240px;">
+            <select class="form-select form-select-sm" id="patients-state" style="width: auto;" title="Filtrar por estado">
+                <option value="">Todos</option>
+                <option value="1">Activos</option>
+                <option value="0">Inactivos</option>
+            </select>
+            <button class="btn btn-sm btn-outline-secondary" id="patients-export" title="Exportar a Excel (CSV)"><i class="bi bi-file-earmark-excel"></i></button>
+            <button class="btn btn-sm btn-primary" id="patients-new"><i class="bi bi-person-plus"></i> Nuevo</button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="v-heading">
+                    <tr>
+                        <th>#</th>
+                        <th>Tipo de identificación</th>
+                        <th>Identificación</th>
+                        <th>Nombres</th>
+                        <th>Apellidos</th>
+                        <th>Teléfono</th>
+                        <th>Correo electrónico</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="patients-tbody"></tbody>
+            </table>
+            <div class="text-center text-muted py-5 d-none" id="patients-empty">
+                <span class="empty-state"><i class="bi bi-people"></i>No se encontraron pacientes.<br>
+                <button class="btn btn-sm btn-primary mt-3" id="patients-empty-new"><i class="bi bi-person-plus"></i> Crear primer paciente</button></span>
+            </div>
+        </div>
+        <nav class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+            <span class="small text-muted" id="patients-count-footer"></span>
+            <div class="d-flex align-items-center gap-2">
+                <span class="small text-muted d-none d-md-inline">Registros por página:</span>
+                <select class="form-select form-select-sm" id="patients-page-size" style="width: auto;">
+                    <option value="10">10</option>
+                    <option value="15">15</option>
+                    <option value="30">30</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                <ul class="pagination pagination-sm mb-0" id="patients-pagination"></ul>
+            </div>
+        </nav>
+    </div>
+</div>
+
+<!-- Modal paciente -->
+<div class="modal fade" id="patient-modal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="patient-modal-title"><span class="modal-icon"><i class="bi bi-person-plus"></i></span><span id="patient-modal-title-text">Nuevo paciente</span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <form id="patient-form" class="row g-2">
+                    <div class="col-md-4">
+                        <label class="form-label small">Tipo de identificación</label>
+                        <select class="form-select form-select-sm" name="identificationtype" required>
+                            {% for t in identification_types %}
+                            <option value="{{ t.valor }}">{{ t.titulo }} ({{ t.valor }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4"><label class="form-label small">Identificación</label><input class="form-control form-control-sm" name="identification" required></div>
+                    <div class="col-md-4"><label class="form-label small">Teléfono</label><input class="form-control form-control-sm" name="phones"></div>
+                    <div class="col-md-6"><label class="form-label small">Nombres</label><input class="form-control form-control-sm" name="names" required></div>
+                    <div class="col-md-6"><label class="form-label small">Apellidos</label><input class="form-control form-control-sm" name="lastnames" required></div>
+                    <div class="col-md-6"><label class="form-label small">Correo electrónico</label><input type="email" class="form-control form-control-sm" name="email"></div>
+                    <div class="col-md-6"><label class="form-label small">Dirección</label><input class="form-control form-control-sm" name="address"></div>
+                    <div class="col-md-6"><label class="form-label small">Contraseña</label><input type="password" class="form-control form-control-sm" name="password" id="patient-password" placeholder="Dejar en blanco para no cambiar"></div>
+                    <div class="col-md-6"><label class="form-label small">Confirmar contraseña</label><input type="password" class="form-control form-control-sm" name="password2" id="patient-password2"></div>
+                    <div class="col-md-6">
+                        <label class="form-label small">Sexo</label>
+                        <select class="form-select form-select-sm" name="sex">
+                            <option value="">Otro</option>
+                            <option value="M">Masculino</option>
+                            <option value="F">Femenino</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6"><label class="form-label small">Estado</label><select class="form-select form-select-sm" name="active"><option value="1">Activo</option><option value="0">Inactivo</option></select></div>
+                    <input type="hidden" name="type" value="person">
+                    <input type="hidden" name="id" id="patient-id">
+                </form>
+                <div class="alert alert-danger d-none mt-2" id="patient-error"></div>
+                <div class="alert alert-warning d-none mt-2" id="patient-password-warning">
+                    <i class="bi bi-info-circle"></i> Si deja la contraseña en blanco, se mantendrá la actual.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="patient-save">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+    var page = 1, limit = 10, totalPages = 1, lastItems = [], searchTimer = null;
+
+    function load() {
+        var tbody = document.getElementById('patients-tbody');
+        window.skeletonRows(tbody, limit, 9);
+        document.getElementById('patients-empty').classList.add('d-none');
+        var q = new URLSearchParams({
+            page: page, recordPerPage: limit, type: 'person',
+            parameter: document.getElementById('patients-search').value.trim()
+        });
+        var st = document.getElementById('patients-state').value;
+        if (st !== '') { q.set('active', st); }
+        window.apiFetch('/api/users?' + q.toString())
+            .then(function (res) {
+                var items = res.content || [];
+                lastItems = items;
+                totalPages = Math.max(1, Math.ceil((res.totalRecord || 0) / limit));
+                document.getElementById('patients-count').textContent = (res.totalRecord || 0) + ' paciente(s)';
+                document.getElementById('patients-count-footer').textContent = (res.totalRecord || 0) + ' paciente(s)';
+                document.getElementById('patients-page-size').value = String(limit);
+                document.getElementById('stat-patients').textContent = fmtStat(res.totalRecord);
+                var tbody = document.getElementById('patients-tbody');
+                tbody.innerHTML = '';
+                document.getElementById('patients-empty').classList.toggle('d-none', items.length > 0);
+                var tbody = document.getElementById('patients-tbody');
+                tbody.innerHTML = '';
+                document.getElementById('patients-empty').classList.toggle('d-none', items.length > 0);
+                items.forEach(function (u, i) {
+                    var tr = document.createElement('tr');
+                    tr.innerHTML = '<td>' + ((page - 1) * limit + i + 1) + '</td>' +
+                        '<td>' + window.esc(u.identificationtype || '') + '</td>' +
+                        '<td>' + window.esc(u.identification || '') + '</td>' +
+                        '<td class="fw-semibold">' + window.esc(u.names || '') + '</td>' +
+                        '<td>' + window.esc(u.lastnames || '') + '</td>' +
+                        '<td>' + window.esc(u.phones || '') + '</td>' +
+                        '<td>' + window.esc(u.email || '') + '</td>' +
+                        '<td>' + (u.active ? '<span class="badge badge-soft-success">Activo</span>' : '<span class="badge badge-soft-secondary">Inactivo</span>') + '</td>' +
+                        '<td class="text-end"><div class="dropdown">' +
+                        '<button class="dropdown-actions" data-dd-toggle title="Acciones"><i class="bi bi-three-dots-vertical"></i></button>' +
+                        '<ul class="dropdown-menu dropdown-menu-end" data-dd-menu>' +
+                        '<li><a class="dropdown-item" href="#" data-edit="' + u.id + '"><i class="bi bi-pencil"></i> Editar</a></li>' +
+                        (u.active ? '<li><a class="dropdown-item text-danger" href="#" data-delete="' + u.id + '"><i class="bi bi-x-circle"></i> Inactivar</a></li>' : '') +
+                        '</ul></div></td>';
+                    tbody.appendChild(tr);
+                });
+                renderPagination();
+            })
+            .catch(function () {});
+    }
+
+    function renderPagination() {
+        var ul = document.getElementById('patients-pagination');
+        ul.innerHTML = '';
+        var mk = function (label, target, disabled) {
+            var li = document.createElement('li');
+            li.className = 'page-item' + (disabled ? ' disabled' : '') + (target === page ? ' active' : '');
+            var a = document.createElement('a');
+            a.className = 'page-link';
+            a.href = '#';
+            a.textContent = label;
+            a.onclick = function (e) { e.preventDefault(); if (!disabled) { page = target; load(); } };
+            li.appendChild(a);
+            return li;
+        };
+        ul.appendChild(mk('«', Math.max(1, page - 1), page === 1));
+        for (var p = 1; p <= totalPages; p++) {
+            if (totalPages > 7 && p > 2 && p < totalPages - 1 && p !== page) { continue; }
+            ul.appendChild(mk(String(p), p, false));
+        }
+        ul.appendChild(mk('»', Math.min(totalPages, page + 1), page === totalPages));
+    }
+
+    // Estadísticas del dashboard (cargas paralelas ligeras)
+    function fmtStat(n) {
+        n = n || 0;
+        if (n >= 1000000) { return (n / 1000000).toFixed(1).replace('.', ',') + ' M'; }
+        if (n >= 1000) { return (n / 1000).toFixed(1).replace('.', ',') + ' k'; }
+        return String(n);
+    }
+    function loadStats() {
+        Promise.all([
+            window.apiFetch('/api/clients?page=1&recordPerPage=1', { silent: true }).catch(function () { return {}; }),
+            window.apiFetch('/api/firms?page=1&limit=1', { silent: true }).catch(function () { return {}; }),
+            window.apiFetch('/api/domains?page=1&recordPerPage=1', { silent: true }).catch(function () { return {}; })
+        ]).then(function (res) {
+            document.getElementById('stat-clients').textContent = fmtStat(res[0].totalRecord);
+            document.getElementById('stat-firms').textContent = fmtStat(res[1].total_count);
+            document.getElementById('stat-domains').textContent = fmtStat(res[2].totalRecord);
+        });
+    }
+    loadStats();
+
+    document.getElementById('patients-empty-new').addEventListener('click', function () {
+        document.getElementById('patients-new').click();
+    });
+    document.getElementById('patients-search').addEventListener('input', function () {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(function () { page = 1; load(); }, 300);
+    });
+    document.getElementById('patients-state').addEventListener('change', function () { page = 1; load(); });
+    document.getElementById('patients-page-size').addEventListener('change', function () {
+        limit = parseInt(this.value, 10) || 10;
+        page = 1;
+        load();
+    });
+    document.getElementById('patients-new').addEventListener('click', function () {
+        document.getElementById('patient-form').reset();
+        document.getElementById('patient-id').value = '';
+        document.getElementById('patient-password').removeAttribute('disabled');
+        document.getElementById('patient-modal-title-text').textContent = 'Nuevo paciente';
+        document.getElementById('patient-error').classList.add('d-none');
+        document.getElementById('patient-password-warning').classList.add('d-none');
+        new bootstrap.Modal(document.getElementById('patient-modal')).show();
+    });
+
+    document.getElementById('patients-tbody').addEventListener('click', function (e) {
+        var edit = e.target.closest('[data-edit]');
+        var del = e.target.closest('[data-delete]');
+        console.log('[TBODY] click: edit=' + !!edit + ' del=' + !!del);
+        if (edit) {
+            e.preventDefault();
+            window.apiFetch('/api/users/' + edit.dataset.edit)
+            .then(function (u) {
+                var f = document.getElementById('patient-form');
+                ['identificationtype', 'identification', 'phones', 'names', 'lastnames', 'email', 'address', 'active', 'sex'].forEach(function (k) {
+                    var i = f.querySelector('[name="' + k + '"]');
+                    if (!i) { return; }
+                    if (k === 'active') { i.value = u.active ? '1' : '0'; }
+                    else { i.value = u[k] != null ? u[k] : ''; }
+                });
+                f.querySelector('[name="password"]').value = '';
+                f.querySelector('[name="password2"]').value = '';
+                document.getElementById('patient-id').value = u.id;
+                document.getElementById('patient-modal-title-text').textContent = 'Editar paciente ' + (u.identification || '');
+                document.getElementById('patient-error').classList.add('d-none');
+                document.getElementById('patient-password-warning').classList.remove('d-none');
+                new bootstrap.Modal(document.getElementById('patient-modal')).show();
+            })
+            .catch(function () {});
+        }
+        if (del) {
+            e.preventDefault();
+            window.showConfirm('¿Está seguro que desea inactivar este paciente?', 'Inactivar paciente', function () {
+                window.apiFetch('/api/users/' + del.dataset.delete, { method: 'DELETE', silent: true })
+                    .then(function () {
+                        window.showToast('Paciente inactivado correctamente', 'success');
+                        load();
+                    })
+                    .catch(function () {});
+            });
+        }
+    });
+
+    // Exportar listado actual a CSV (compatible con Excel)
+    document.getElementById('patients-export').addEventListener('click', function () {
+        if (!lastItems.length) { window.showToast('No hay datos para exportar', 'warning'); return; }
+        var headers = ['Tipo doc.', 'Identificación', 'Nombres', 'Apellidos', 'Teléfono', 'Correo', 'Estado'];
+        var rows = lastItems.map(function (u) {
+            return [u.identificationtype || '', u.identification || '', u.names || '', u.lastnames || '', u.phones || '', u.email || '', u.active ? 'Activo' : 'Inactivo'];
+        });
+        var csv = '\uFEFF' + headers.join(';') + '\n' + rows.map(function (r) {
+            return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(';');
+        }).join('\n');
+        var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'pacientes.csv';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 100);
+    });
+
+    document.getElementById('patient-save').addEventListener('click', function () {
+        var f = document.getElementById('patient-form');
+        var id = document.getElementById('patient-id').value;
+        var password = f.querySelector('[name="password"]').value;
+        var password2 = f.querySelector('[name="password2"]').value;
+        var errBox = document.getElementById('patient-error');
+        errBox.classList.add('d-none');
+
+        if (password !== password2) {
+            errBox.textContent = 'Las contraseñas no coinciden. Por favor, verifica.';
+            errBox.classList.remove('d-none');
+            return;
+        }
+        if (!id && password === '') {
+            errBox.textContent = 'La contraseña es obligatoria para crear un paciente.';
+            errBox.classList.remove('d-none');
+            return;
+        }
+
+        var payload = {};
+        new FormData(f).forEach(function (v, k) {
+            if (k !== 'password2' && k !== 'id') { payload[k] = v; }
+        });
+        if (id) {
+            delete payload.type;
+            if (password === '') { delete payload.password; }
+        }
+        var saveBtn = document.getElementById('patient-save');
+        window.setLoading(saveBtn, true, 'Guardando...');
+        window.apiFetch('/api/users/' + (id || ''), {
+            method: id ? 'PATCH' : 'POST', silent: true,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+            .then(function () {
+                bootstrap.Modal.getInstance(document.getElementById('patient-modal')).hide();
+                window.showToast(id ? 'Paciente actualizado correctamente' : 'Paciente creado correctamente', 'success');
+                load();
+            })
+            .catch(function (err) {
+                errBox.textContent = err.message || 'Error al guardar el paciente.';
+                errBox.classList.remove('d-none');
+            })
+            .finally(function () { window.setLoading(saveBtn, false); });
+    });
+
+    load();
+})();
+</script>
+{% endblock %}

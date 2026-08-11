@@ -1,0 +1,226 @@
+{% extends 'modern/base.html.twig' %}
+{% block title %}Firmas - Resultados en Línea{% endblock %}
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1><i class="bi bi-clipboard-pulse text-primary me-2"></i>Firmas</h1>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ path('root') }}">Panel</a></li><li class="breadcrumb-item active" aria-current="page">Firmas</li></ol></nav>
+    </div>
+    <span class="stat-badge" id="firms-stat"><i class="bi bi-clipboard-pulse"></i><span id="firms-count">Cargando...</span></span>
+</div>
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-clipboard-pulse text-primary me-1"></i> Firmas</span>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-secondary" id="firms-export" title="Exportar a Excel (CSV)"><i class="bi bi-file-earmark-excel"></i></button>
+            <button class="btn btn-sm btn-primary" id="firms-new"><i class="bi bi-plus-lg"></i> Nuevo</button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="v-heading">
+                    <tr><th>#</th><th>Código</th><th>Url</th><th>Estado</th><th></th></tr>
+                </thead>
+                <tbody id="firms-tbody"></tbody>
+            </table>
+            <div class="text-center text-muted py-5 d-none" id="firms-empty">
+                <span class="empty-state"><i class="bi bi-clipboard-pulse"></i>No se encontraron firmas.<br>
+                <button class="btn btn-sm btn-primary mt-3" id="firms-empty-new"><i class="bi bi-plus-lg"></i> Crear primera firma</button></span>
+            </div>
+        </div>
+        <nav class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+            <span class="small text-muted" id="firms-count-footer"></span>
+            <div class="d-flex align-items-center gap-2">
+                <span class="small text-muted d-none d-md-inline">Registros por página:</span>
+                <select class="form-select form-select-sm" id="firms-page-size" style="width: auto;">
+                    <option value="10">10</option>
+                    <option value="15">15</option>
+                    <option value="30">30</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                <ul class="pagination pagination-sm mb-0" id="firms-pagination"></ul>
+            </div>
+        </nav>
+    </div>
+</div>
+
+<!-- Modal firma -->
+<div class="modal fade" id="firm-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="firm-modal-title"><span class="modal-icon"><i class="bi bi-clipboard-pulse"></i></span><span id="firm-modal-title-text">Nueva firma</span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <form id="firm-form" class="row g-2">
+                    <div class="col-12"><label class="form-label small">Código</label><input class="form-control form-control-sm" name="code" required></div>
+                    <div class="col-12"><label class="form-label small">Url (ruta del archivo o imagen)</label><input class="form-control form-control-sm" name="url"></div>
+                    <div class="col-12"><label class="form-label small">Código de empresa</label><input class="form-control form-control-sm" name="code_company"></div>
+                    <input type="hidden" name="id" id="firm-id">
+                </form>
+                <div class="alert alert-danger d-none mt-2" id="firm-error"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="firm-save">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+    var page = 1, limit = 10, totalPages = 1, lastItems = [];
+
+    function load() {
+        var tbody = document.getElementById('firms-tbody');
+        window.skeletonRows(tbody, limit, 5);
+        document.getElementById('firms-empty').classList.add('d-none');
+        var q = new URLSearchParams({ page: page, limit: limit });
+        window.apiFetch('/api/firms?' + q.toString())
+            .then(function (res) {
+                var items = res.items || [];
+                lastItems = items;
+                totalPages = Math.max(1, Math.ceil((res.total_count || 0) / limit));
+                document.getElementById('firms-count').textContent = (res.total_count || 0) + ' firma(s)';
+                document.getElementById('firms-count-footer').textContent = (res.total_count || 0) + ' firma(s)';
+                document.getElementById('firms-page-size').value = String(limit);
+                tbody.innerHTML = '';
+                document.getElementById('firms-empty').classList.toggle('d-none', items.length > 0);
+                items.forEach(function (f, i) {
+                    var tr = document.createElement('tr');
+                    tr.innerHTML = '<td>' + ((page - 1) * limit + i + 1) + '</td>' +
+                        '<td class="fw-semibold">' + window.esc(f.code || '') + '</td>' +
+                        '<td class="text-truncate" style="max-width: 320px;" title="' + window.esc(f.url || '') + '">' + window.esc(f.url || '') + '</td>' +
+                        '<td>' + (f.active ? '<span class="badge badge-soft-success">Activo</span>' : '<span class="badge badge-soft-secondary">Inactivo</span>') + '</td>' +
+                        '<td class="text-end"><div class="dropdown">' +
+                        '<button class="dropdown-actions" data-dd-toggle><i class="bi bi-three-dots-vertical"></i></button>' +
+                        '<ul class="dropdown-menu dropdown-menu-end" data-dd-menu>' +
+                        '<li><a class="dropdown-item" href="#" data-edit="' + f.id + '"><i class="bi bi-pencil"></i> Editar</a></li>' +
+                        '<li><a class="dropdown-item text-danger" href="#" data-delete="' + f.id + '"><i class="bi bi-x-circle"></i> Inactivar</a></li>' +
+                        '</ul></div></td>';
+                    tbody.appendChild(tr);
+                });
+                renderPagination();
+            })
+            .catch(function () {});
+    }
+
+    function renderPagination() {
+        var ul = document.getElementById('firms-pagination');
+        ul.innerHTML = '';
+        var mk = function (label, target, disabled) {
+            var li = document.createElement('li');
+            li.className = 'page-item' + (disabled ? ' disabled' : '') + (target === page ? ' active' : '');
+            var a = document.createElement('a');
+            a.className = 'page-link';
+            a.href = '#';
+            a.textContent = label;
+            a.onclick = function (e) { e.preventDefault(); if (!disabled) { page = target; load(); } };
+            li.appendChild(a);
+            return li;
+        };
+        ul.appendChild(mk('«', Math.max(1, page - 1), page === 1));
+        for (var p = 1; p <= totalPages; p++) {
+            if (totalPages > 7 && p > 2 && p < totalPages - 1 && p !== page) { continue; }
+            ul.appendChild(mk(String(p), p, false));
+        }
+        ul.appendChild(mk('»', Math.min(totalPages, page + 1), page === totalPages));
+    }
+
+    document.getElementById('firms-page-size').addEventListener('change', function () {
+        limit = parseInt(this.value, 10) || 10;
+        page = 1;
+        load();
+    });
+    document.getElementById('firms-empty-new').addEventListener('click', function () {
+        document.getElementById('firms-new').click();
+    });
+    document.getElementById('firms-new').addEventListener('click', function () {
+        document.getElementById('firm-form').reset();
+        document.getElementById('firm-id').value = '';
+        document.getElementById('firm-modal-title-text').textContent = 'Nueva firma';
+        document.getElementById('firm-error').classList.add('d-none');
+        new bootstrap.Modal(document.getElementById('firm-modal')).show();
+    });
+
+    document.getElementById('firms-tbody').addEventListener('click', function (e) {
+        var edit = e.target.closest('[data-edit]');
+        var del = e.target.closest('[data-delete]');
+        if (edit) {
+            e.preventDefault();
+            window.apiFetch('/api/firms/' + edit.dataset.edit)
+                .then(function (f) {
+                    document.getElementById('firm-form').reset();
+                    var form = document.getElementById('firm-form');
+                    form.querySelector('[name="code"]').value = f.code || '';
+                    form.querySelector('[name="url"]').value = f.url || '';
+                    form.querySelector('[name="code_company"]').value = f.code_company || '';
+                    document.getElementById('firm-id').value = f.id;
+                    document.getElementById('firm-modal-title-text').textContent = 'Editar firma ' + (f.code || '');
+                    document.getElementById('firm-error').classList.add('d-none');
+                    new bootstrap.Modal(document.getElementById('firm-modal')).show();
+                })
+                .catch(function () {});
+        }
+        if (del) {
+            e.preventDefault();
+            window.showConfirm('¿Está seguro que desea inactivar esta firma?', 'Inactivar firma', function () {
+                window.apiFetch('/api/firms/' + del.dataset.delete, { method: 'DELETE', silent: true })
+                    .then(function () {
+                        window.showToast('Firma inactivada correctamente', 'success');
+                        load();
+                    })
+                    .catch(function () {});
+            });
+        }
+    });
+
+    // Exportar listado actual a CSV (compatible con Excel)
+    document.getElementById('firms-export').addEventListener('click', function () {
+        if (!lastItems.length) { window.showToast('No hay datos para exportar', 'warning'); return; }
+        var headers = ['Código', 'Url', 'Código empresa', 'Estado'];
+        var rows = lastItems.map(function (f) {
+            return [f.code || '', f.url || '', f.code_company || '', f.active ? 'Activo' : 'Inactivo'];
+        });
+        var csv = '\uFEFF' + headers.join(';') + '\n' + rows.map(function (r) {
+            return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(';');
+        }).join('\n');
+        var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'firmas.csv';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 100);
+    });
+
+    document.getElementById('firm-save').addEventListener('click', function () {
+        var f = document.getElementById('firm-form');
+        var id = document.getElementById('firm-id').value;
+        var payload = {};
+        new FormData(f).forEach(function (v, k) { if (k !== 'id') { payload[k] = v; } });
+        var saveBtn = document.getElementById('firm-save');
+        window.setLoading(saveBtn, true, 'Guardando...');
+        window.apiFetch('/api/firms/' + (id || ''), {
+            method: id ? 'PATCH' : 'POST', silent: true,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+            .then(function () {
+                bootstrap.Modal.getInstance(document.getElementById('firm-modal')).hide();
+                window.showToast(id ? 'Firma actualizada correctamente' : 'Firma creada correctamente', 'success');
+                load();
+            })
+            .catch(function (err) {
+                document.getElementById('firm-error').textContent = err.message || 'Error al guardar la firma.';
+                document.getElementById('firm-error').classList.remove('d-none');
+            })
+            .finally(function () { window.setLoading(saveBtn, false); });
+    });
+
+    load();
+})();
+</script>
+{% endblock %}

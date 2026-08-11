@@ -1,0 +1,264 @@
+{% extends 'modern/base.html.twig' %}
+{% block title %}Resultados - Resultados en Línea{% endblock %}
+{% block content %}
+{% set sessionUser = app.session.get('user') %}
+<div class="page-head">
+    <div>
+        <h1><i class="bi bi-file-text text-primary me-2"></i>Resultados</h1>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ path('root') }}">Panel</a></li><li class="breadcrumb-item active" aria-current="page">Resultados</li></ol></nav>
+    </div>
+</div>
+<div class="card mb-3">
+    <div class="card-header"><i class="bi bi-search text-primary me-1"></i> Consultar resultados</div>
+    <div class="card-body">
+        <form id="results-form" class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label small">Fecha inicial</label>
+                <input type="date" class="form-control form-control-sm" name="start_date">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">Fecha final</label>
+                <input type="date" class="form-control form-control-sm" name="end_date">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">Tipo doc.</label>
+                <select class="form-select form-select-sm" name="identification_type">
+                    <option value="">Todos</option>
+                    {% for t in identification_types %}
+                    <option value="{{ t.valor }}">{{ t.titulo }} ({{ t.valor }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small">Identificación</label>
+                <input type="text" class="form-control form-control-sm" name="identification_number" placeholder="Número de documento">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small">Nombre</label>
+                <input type="text" class="form-control form-control-sm" name="name" placeholder="Nombre del paciente">
+            </div>
+            <div class="col-12 d-flex gap-2">
+                <button class="btn btn-primary btn-sm" type="submit" id="results-search-btn"><i class="bi bi-search"></i> Buscar</button>
+                <button class="btn btn-outline-secondary btn-sm" type="button" id="results-clear">Limpiar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><i class="bi bi-person-lines-fill text-primary me-1"></i> Pacientes y solicitudes</div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="v-heading">
+                    <tr>
+                        <th>#</th>
+                        <th>Identificación</th>
+                        <th>Paciente</th>
+                        <th>Teléfono</th>
+                        <th>Dirección</th>
+                        <th>Solicitudes</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="results-tbody"></tbody>
+            </table>
+            <div class="text-center text-muted py-5 d-none" id="results-empty">
+                <span class="empty-state"><i class="bi bi-search"></i>Realice una búsqueda para ver resultados.</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal solicitudes del paciente -->
+<div class="modal fade" id="exams-modal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exams-title"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="card border mb-3">
+                    <div class="card-body py-2">
+                        <table class="table table-sm table-borderless mb-0" id="exams-personal"></table>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="v-heading">
+                            <tr><th>#</th><th>Solicitud</th><th>Fecha recepción</th><th>Exámenes</th><th>Estado</th><th></th></tr>
+                        </thead>
+                        <tbody id="exams-tbody"></tbody>
+                    </table>
+                    <div class="text-center text-muted py-4 d-none" id="exams-empty">
+                        <span class="empty-state"><i class="bi bi-journal-text"></i>El paciente no tiene solicitudes.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal detalle de resultados -->
+<div class="modal fade" id="detail-modal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="detail-title"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body" id="detail-body"></div>
+            <div class="modal-footer">
+                <a href="#" class="btn btn-success" id="detail-pdf"><i class="bi bi-file-earmark-pdf"></i> Descargar PDF</a>
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+    function downloadPdf(requestCode, isPrevalidated, url, btn) {
+        if (btn) { btn.disabled = true; }
+        window.apiFetch('/valid_result?_solicitud=' + encodeURIComponent(requestCode), { silent: true })
+            .then(function (res) {
+                if (res.state === 1) {
+                    var q = '?prevalidated=' + (isPrevalidated ? '1' : '0');
+                    if (url && url !== '' && url !== 'no') { q += '&url=' + encodeURIComponent(url); }
+                    window.open('/result/pdf/' + encodeURIComponent(requestCode) + q, '_blank');
+                } else {
+                    window.showToast(res.msg || 'No puede descargar este resultado, debe estar al día con el pago.', 'warning');
+                }
+            })
+            .catch(function () {})
+            .finally(function () { if (btn) { btn.disabled = false; } });
+    }
+
+    function openDetail(requestCode, prevalidated) {
+        var q = prevalidated !== undefined && prevalidated !== '' ? '?prevalidated=' + prevalidated : '';
+        window.apiFetch('/result/detail/' + encodeURIComponent(requestCode) + q, { silent: true })
+            .then(function (d) {
+                if (d.message) { window.showToast(d.message, 'warning'); return; }
+                var html = '';
+                if (d.prevalidated) {
+                    html += '<div class="alert alert-warning py-2"><b>Validado Preliminar</b></div>';
+                }
+                html += '<table class="table table-sm mb-3"><tbody>' +
+                    '<tr><th class="w-25">Paciente</th><td>' + window.esc(d.patient_name) + '</td>' +
+                    '<th class="w-25">Solicitud</th><td>' + window.esc(d.request_code) + '</td></tr>' +
+                    '<tr><th>Identificación</th><td>' + window.esc(d.identification_type + ' ' + d.identification_number) + '</td>' +
+                    '<th>Fecha</th><td>' + window.esc(d.reception_date) + '</td></tr>' +
+                    '<tr><th>Edad</th><td>' + window.esc(d.age + ' ' + d.age_unit) + '</td>' +
+                    '<th>Empresa</th><td>' + window.esc(d.client_name) + '</td></tr></tbody></table>';
+                (d.descriptive_texts || []).forEach(function (dt) {
+                    html += '<h6 class="mt-3 text-primary">' + window.esc(dt.exam_name) + '</h6>' +
+                        '<div style="white-space: pre-line;">' + window.esc(dt.descriptive_text) + '</div>';
+                });
+                d.sections.forEach(function (section) {
+                    html += '<h6 class="mt-3 text-primary">' + window.esc(section.name) + '</h6>';
+                    section.exams.forEach(function (exam) {
+                        html += '<b>' + window.esc(exam.exam_name) + '</b>';
+                        if (exam.processing_date || exam.validation_date) {
+                            html += '<div class="small text-muted">' +
+                                (exam.processing_date ? 'Procesado: ' + window.esc(exam.processing_date + (exam.processing_time ? ' ' + exam.processing_time : '')) + ' ' : '') +
+                                (exam.validation_date ? 'Validado: ' + window.esc(exam.validation_date + (exam.validation_time ? ' ' + exam.validation_time : '')) : '') +
+                                '</div>';
+                        }
+                        html += '<table class="table table-sm table-striped"><tbody>';
+                        exam.details.forEach(function (det) {
+                            if (det.ima_result) { html += '<tr><td colspan="3">' + window.esc(det.ima_result) + '</td></tr>'; }
+                            html += '<tr><td>' + window.esc(det.analito) + '</td><td><b>' + window.esc(det.result) + '</b></td><td>' + window.esc(det.units) + '</td></tr>';
+                        });
+                        html += '</tbody></table>';
+                    });
+                });
+                document.getElementById('detail-title').textContent = 'Resultados - Solicitud ' + d.request_code;
+                document.getElementById('detail-body').innerHTML = html;
+                document.getElementById('detail-pdf').onclick = function (e) { e.preventDefault(); downloadPdf(requestCode, d.prevalidated, d.exams); };
+                new bootstrap.Modal(document.getElementById('detail-modal')).show();
+            })
+            .catch(function () { window.showToast('Error consultando el detalle.', 'danger'); });
+    }
+
+    var form = document.getElementById('results-form');
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var btn = document.getElementById('results-search-btn');
+        var fd = new FormData(form);
+        var hasFilter = fd.get('identification_number')
+            || fd.get('identification_type')
+            || fd.get('name')
+            || (fd.get('start_date') && fd.get('end_date'));
+        if (!hasFilter) {
+            window.showToast('Debe seleccionar por lo menos un filtro', 'warning');
+            return;
+        }
+        var q = new URLSearchParams(fd);
+        window.setLoading(btn, true, 'Buscando...');
+        window.apiFetch('/results/labs?' + q.toString())
+            .then(function (res) {
+                var tbody = document.getElementById('results-tbody');
+                tbody.innerHTML = '';
+                document.getElementById('results-empty').classList.toggle('d-none', (res.items || []).length > 0);
+                if (res.error) { window.showToast(res.error, 'warning'); }
+                (res.items || []).forEach(function (p, i) {
+                    var tr = document.createElement('tr');
+                    tr.innerHTML = '<td>' + (i + 1) + '</td>' +
+                        '<td>' + window.esc(p.identification_number) + '</td>' +
+                        '<td class="fw-semibold">' + window.esc(p.full_name) + '</td>' +
+                        '<td>' + window.esc(p.phone) + '</td>' +
+                        '<td>' + window.esc(p.address) + '</td>' +
+                        '<td><button class="btn btn-sm btn-outline-primary" data-exams="' + window.esc(p.identification_number) + '|' + window.esc(p.identification_type) + '|' + window.esc(p.full_name) + '"><i class="bi bi-journal-text"></i> Ver solicitudes</button></td>' +
+                        '<td></td>';
+                    tr.querySelector('[data-exams]').addEventListener('click', function () {
+                        var parts = this.dataset.exams.split('|');
+                        openExams(parts[0], parts[1], parts[2]);
+                    });
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(function () {})
+            .finally(function () { window.setLoading(btn, false); });
+    });
+    document.getElementById('results-clear').addEventListener('click', function () { form.reset(); document.getElementById('results-tbody').innerHTML = ''; });
+
+    function openExams(identification, typeDoc, fullName) {
+        document.getElementById('exams-title').textContent = 'Solicitudes - ' + fullName;
+        var q = new URLSearchParams({ identification: identification, type_doc: typeDoc });
+        window.apiFetch('/resultCrud?' + q.toString(), { silent: true })
+            .then(function (res) {
+                var personal = document.getElementById('exams-personal');
+                var patient = (res.patient || {});
+                personal.innerHTML = '<tr><th class="w-25">Nombre</th><td>' + window.esc(patient.names || fullName) + '</td>' +
+                    '<th class="w-25">Identificación</th><td>' + window.esc(patient.identification_number || '') + '</td></tr>' +
+                    '<tr><th>Dirección</th><td>' + window.esc(patient.address || '') + '</td>' +
+                    '<th>Teléfono</th><td>' + window.esc(patient.phones || '') + '</td></tr>' +
+                    '<tr><th>Sexo</th><td>' + window.esc(patient.sex || '') + '</td><th></th><td></td></tr>';
+                var tbody = document.getElementById('exams-tbody');
+                tbody.innerHTML = '';
+                var items = res.items || [];
+                document.getElementById('exams-empty').classList.toggle('d-none', items.length > 0);
+                items.forEach(function (r, i) {
+                    var tr = document.createElement('tr');
+                    tr.innerHTML = '<td>' + (i + 1) + '</td>' +
+                        '<td class="fw-semibold">' + window.esc(r.request_code) + '</td>' +
+                        '<td>' + window.esc(r.reception_date) + '</td>' +
+                        '<td>' + window.esc(r.exams) + '</td>' +
+                        '<td>' + (r.prevalidated ? '<span class="badge badge-soft-warning">Validado Preliminar</span>' : '<span class="badge badge-soft-success">Validado</span>') + '</td>' +
+                        '<td class="text-end"><a href="#" class="text-success action-icon" data-download="' + window.esc(r.request_code) + '" data-prevalidated="' + (r.prevalidated ? '1' : '0') + '" data-url="' + window.esc(r.url || 'no') + '" title="Descargar PDF"><i class="bi bi-download"></i></a></td>';
+                    tr.querySelector('[data-download]').addEventListener('click', function (ev) {
+                        ev.preventDefault();
+                        downloadPdf(r.request_code, r.prevalidated, r.url, this);
+                        openDetail(r.request_code, r.prevalidated);
+                    });
+                    tbody.appendChild(tr);
+                });
+                new bootstrap.Modal(document.getElementById('exams-modal')).show();
+            })
+            .catch(function () { window.showToast('Error consultando las solicitudes.', 'danger'); });
+    }
+})();
+</script>
+{% endblock %}

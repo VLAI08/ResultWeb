@@ -1,0 +1,227 @@
+{% extends 'modern/base.html.twig' %}
+{% block title %}Configuración - Resultados en Línea{% endblock %}
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1><i class="bi bi-gear text-primary me-2"></i>Configuración</h1>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ path('root') }}">Panel</a></li><li class="breadcrumb-item active" aria-current="page">Configuración</li></ol></nav>
+    </div>
+    <span class="stat-badge" id="domains-stat"><i class="bi bi-gear"></i><span id="domains-count">Cargando...</span></span>
+</div>
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span><i class="bi bi-gear text-primary me-1"></i> Parámetros</span>
+        <div class="d-flex gap-2">
+            <input type="text" class="form-control form-control-sm" id="domains-search" placeholder="Buscar parámetro..." style="width: 240px;">
+            <select class="form-select form-select-sm" id="domains-state" style="width: auto;" title="Filtrar por estado">
+                <option value="">Todos</option>
+                <option value="1">Activos</option>
+                <option value="0">Inactivos</option>
+            </select>
+            <button class="btn btn-sm btn-outline-secondary" id="domains-export" title="Exportar a Excel (CSV)"><i class="bi bi-file-earmark-excel"></i></button>
+            <button class="btn btn-sm btn-primary" id="domains-new"><i class="bi bi-plus-lg"></i> Nuevo</button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="v-heading">
+                    <tr><th>#</th><th>Nombre</th><th>Título</th><th>Valor</th><th>Estado</th><th></th></tr>
+                </thead>
+                <tbody id="domains-tbody"></tbody>
+            </table>
+            <div class="text-center text-muted py-5 d-none" id="domains-empty">
+                <span class="empty-state"><i class="bi bi-gear"></i>No se encontraron parámetros.<br>
+                <button class="btn btn-sm btn-primary mt-3" id="domains-empty-new"><i class="bi bi-plus-lg"></i> Crear parámetro</button></span>
+            </div>
+        </div>
+        <nav class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+            <span class="small text-muted" id="domains-count-footer"></span>
+            <div class="d-flex align-items-center gap-2">
+                <span class="small text-muted d-none d-md-inline">Registros por página:</span>
+                <select class="form-select form-select-sm" id="domains-page-size" style="width: auto;">
+                    <option value="10">10</option>
+                    <option value="15">15</option>
+                    <option value="30">30</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                <ul class="pagination pagination-sm mb-0" id="domains-pagination"></ul>
+            </div>
+        </nav>
+    </div>
+</div>
+
+<!-- Modal dominio -->
+<div class="modal fade" id="domain-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="domain-modal-title"><span class="modal-icon"><i class="bi bi-gear"></i></span><span id="domain-modal-title-text">Nuevo parámetro</span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <form id="domain-form" class="row g-2">
+                    <div class="col-12"><label class="form-label small">Nombre (clave)</label><input class="form-control form-control-sm" name="name" required></div>
+                    <div class="col-12"><label class="form-label small">Título</label><input class="form-control form-control-sm" name="titulo"></div>
+                    <div class="col-12"><label class="form-label small">Valor</label><input class="form-control form-control-sm" name="valor"></div>
+                    <div class="col-6"><label class="form-label small">Estado</label><select class="form-select form-select-sm" name="active"><option value="1">Activo</option><option value="0">Inactivo</option></select></div>
+                    <input type="hidden" name="id" id="domain-id">
+                </form>
+                <div class="alert alert-danger d-none mt-2" id="domain-error"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="domain-save">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+    var page = 1, limit = 10, totalPages = 1, lastItems = [], searchTimer = null;
+
+    function load() {
+        var tbody = document.getElementById('domains-tbody');
+        window.skeletonRows(tbody, limit, 6);
+        document.getElementById('domains-empty').classList.add('d-none');
+        var q = new URLSearchParams({
+            page: page, recordPerPage: limit,
+            parameter: document.getElementById('domains-search').value.trim()
+        });
+        var st = document.getElementById('domains-state').value;
+        if (st !== '') { q.set('active', st); }
+        window.apiFetch('/api/domains?' + q.toString())
+            .then(function (res) {
+                var items = res.content || [];
+                lastItems = items;
+                totalPages = Math.max(1, Math.ceil((res.totalRecord || 0) / limit));
+                document.getElementById('domains-count').textContent = (res.totalRecord || 0) + ' parámetro(s)';
+                document.getElementById('domains-count-footer').textContent = (res.totalRecord || 0) + ' parámetro(s)';
+                document.getElementById('domains-page-size').value = String(limit);
+                var tbody = document.getElementById('domains-tbody');
+                tbody.innerHTML = '';
+                document.getElementById('domains-empty').classList.toggle('d-none', items.length > 0);
+                items.forEach(function (d, i) {
+                    var tr = document.createElement('tr');
+                    tr.innerHTML = '<td>' + ((page - 1) * limit + i + 1) + '</td>' +
+                        '<td class="fw-semibold">' + window.esc(d.name || '') + '</td>' +
+                        '<td>' + window.esc(d.titulo || '') + '</td>' +
+                        '<td>' + window.esc(d.valor || '') + '</td>' +
+                        '<td>' + (d.active ? '<span class="badge badge-soft-success">Activo</span>' : '<span class="badge badge-soft-secondary">Inactivo</span>') + '</td>' +
+                        '<td class="text-end"><button class="btn btn-sm btn-outline-primary action-icon" data-edit="' + d.id + '" title="Editar"><i class="bi bi-pencil"></i></button></td>';
+                    tbody.appendChild(tr);
+                });
+                renderPagination();
+            })
+            .catch(function () {});
+    }
+
+    function renderPagination() {
+        var ul = document.getElementById('domains-pagination');
+        ul.innerHTML = '';
+        var mk = function (label, target, disabled) {
+            var li = document.createElement('li');
+            li.className = 'page-item' + (disabled ? ' disabled' : '') + (target === page ? ' active' : '');
+            var a = document.createElement('a');
+            a.className = 'page-link';
+            a.href = '#';
+            a.textContent = label;
+            a.onclick = function (e) { e.preventDefault(); if (!disabled) { page = target; load(); } };
+            li.appendChild(a);
+            return li;
+        };
+        ul.appendChild(mk('«', Math.max(1, page - 1), page === 1));
+        for (var p = 1; p <= totalPages; p++) {
+            if (totalPages > 7 && p > 2 && p < totalPages - 1 && p !== page) { continue; }
+            ul.appendChild(mk(String(p), p, false));
+        }
+        ul.appendChild(mk('»', Math.min(totalPages, page + 1), page === totalPages));
+    }
+
+    document.getElementById('domains-empty-new').addEventListener('click', function () {
+        document.getElementById('domains-new').click();
+    });
+
+    // Exportar listado actual a CSV (compatible con Excel)
+    document.getElementById('domains-export').addEventListener('click', function () {
+        if (!lastItems.length) { window.showToast('No hay datos para exportar', 'warning'); return; }
+        var headers = ['Nombre', 'Título', 'Valor', 'Estado'];
+        var rows = lastItems.map(function (d) {
+            return [d.name || '', d.titulo || '', d.valor || '', d.active ? 'Activo' : 'Inactivo'];
+        });
+        var csv = '\uFEFF' + headers.join(';') + '\n' + rows.map(function (r) {
+            return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(';');
+        }).join('\n');
+        var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'parametros.csv';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 100);
+    });
+    document.getElementById('domains-search').addEventListener('input', function () {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(function () { page = 1; load(); }, 300);
+    });
+    document.getElementById('domains-state').addEventListener('change', function () { page = 1; load(); });
+    document.getElementById('domains-page-size').addEventListener('change', function () {
+        limit = parseInt(this.value, 10) || 10;
+        page = 1;
+        load();
+    });
+    document.getElementById('domains-new').addEventListener('click', function () {
+        document.getElementById('domain-form').reset();
+        document.getElementById('domain-id').value = '';
+        document.getElementById('domain-modal-title-text').textContent = 'Nuevo parámetro';
+        document.getElementById('domain-error').classList.add('d-none');
+        new bootstrap.Modal(document.getElementById('domain-modal')).show();
+    });
+
+    document.getElementById('domains-tbody').addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-edit]');
+        if (!btn) { return; }
+        window.apiFetch('/api/domains/' + btn.dataset.edit)
+            .then(function (d) {
+                var f = document.getElementById('domain-form');
+                f.reset();
+                f.querySelector('[name="name"]').value = d.name || '';
+                f.querySelector('[name="titulo"]').value = d.titulo || '';
+                f.querySelector('[name="valor"]').value = d.valor || '';
+                f.querySelector('[name="active"]').value = d.active ? '1' : '0';
+                document.getElementById('domain-id').value = d.id;
+                document.getElementById('domain-modal-title-text').textContent = 'Editar ' + (d.name || '');
+                document.getElementById('domain-error').classList.add('d-none');
+                new bootstrap.Modal(document.getElementById('domain-modal')).show();
+            })
+            .catch(function () {});
+    });
+
+    document.getElementById('domain-save').addEventListener('click', function () {
+        var f = document.getElementById('domain-form');
+        var id = document.getElementById('domain-id').value;
+        var payload = {};
+        new FormData(f).forEach(function (v, k) { if (k !== 'id') { payload[k] = v; } });
+        var saveBtn = document.getElementById('domain-save');
+        window.setLoading(saveBtn, true, 'Guardando...');
+        window.apiFetch('/api/domains/' + (id || ''), {
+            method: id ? 'PATCH' : 'POST', silent: true,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+            .then(function () {
+                bootstrap.Modal.getInstance(document.getElementById('domain-modal')).hide();
+                window.showToast(id ? 'Parámetro actualizado correctamente' : 'Parámetro creado correctamente', 'success');
+                load();
+            })
+            .catch(function (err) {
+                document.getElementById('domain-error').textContent = err.message || 'Error al guardar el parámetro.';
+                document.getElementById('domain-error').classList.remove('d-none');
+            })
+            .finally(function () { window.setLoading(saveBtn, false); });
+    });
+
+    load();
+})();
+</script>
+{% endblock %}

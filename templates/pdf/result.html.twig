@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Resultados</title>
+    <style>
+        html, body {
+            font-family: "verdana", "sans-serif";
+            font-size: 1em;
+        }
+        .label {
+            color: #000033;
+            padding: 1px 3px;
+            font-size: 0.95em;
+            font-weight: 500;
+        }
+        .field {
+            color: #000033;
+            padding: 1px 3px;
+            font-weight: 600;
+            font-size: 0.75em;
+        }
+        td {
+            color: #000033;
+            padding: 0px 3px;
+        }
+        .seccion-title {
+            margin-top: 3px;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 1.3rem;
+            color: #000033;
+        }
+        .analito {
+            width: 300px;
+            white-space: nowrap;
+            font-size: 0.80em;
+            padding: 1px 3px;
+        }
+        .result {
+            width: 100px;
+            white-space: nowrap;
+            font-size: 0.75em;
+            padding: 1px 3px;
+        }
+        .border-top-black { border-top: 1px solid black !important; }
+        .border-bottom-black { border-bottom: 1px solid black !important; }
+        .print {
+            widows: 12;
+            page-break-after: always;
+            page-break-inside: always;
+        }
+        .print:last-of-type { page-break-after: auto; }
+        .detail-result {
+            page-break-after: auto;
+            page-break-inside: always;
+        }
+        .content { position: relative; }
+        .header-logo {
+            position: fixed;
+            left: 0px; top: 0px; right: 0px;
+            height: 200px;
+        }
+        .footer-logo {
+            position: fixed;
+            left: 0px; bottom: -90px; right: 0px;
+            height: 200px;
+        }
+        .client-title {
+            font-weight: bold;
+            font-size: 1.1em;
+            height: 40px !important;
+        }
+        .signature {
+            position: fixed;
+            bottom: 100px;
+            right: -50px;
+        }
+        .barcode { margin-top: 6px; }
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 120px;
+            color: rgba(0, 0, 0, 0.08);
+            font-weight: bold;
+            z-index: -1;
+            text-align: center;
+            width: 200%;
+            white-space: nowrap;
+        }
+        .line-botton {
+            font-weight: bold;
+            margin-top: 8px;
+            text-decoration: underline;
+            font-size: 0.7em;
+        }
+        .descriptive-section {
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+        }
+        .descriptive-title {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #000033;
+            margin-bottom: 10px;
+        }
+        .descriptive-text {
+            font-size: 0.9em;
+            color: #000033;
+            line-height: 1.5;
+            white-space: pre-line;
+        }
+    </style>
+</head>
+<body>
+    {% if detail.prevalidated is defined and detail.prevalidated %}
+    <div class="watermark">Validado Preliminar</div>
+    {% endif %}
+
+    {% if detail.header is defined and detail.header %}
+    <div class="header-logo">
+        <img src="{{ detail.header }}" style="width: 100%; height: 200px; object-fit: contain;" alt="">
+    </div>
+    {% endif %}
+
+    <div class="content">
+        <table style="width: 100%; margin-top: 205px;">
+            <tr>
+                <td class="field">Nombre:</td>
+                <td class="label">{{ detail.patient_name }}</td>
+                <td class="field">Edad:</td>
+                <td class="label">{{ detail.age }} {{ detail.age_unit }}</td>
+                <td class="field">Sexo:</td>
+                <td class="label">{{ detail.sex }}</td>
+            </tr>
+            <tr>
+                <td class="field">Identificación:</td>
+                <td class="label">{{ detail.identification_type }} {{ detail.identification_number }}</td>
+                <td class="field">Solicitud:</td>
+                <td class="label">{{ detail.request_code }}</td>
+                <td class="field">Fecha:</td>
+                <td class="label">{{ detail.reception_date }}</td>
+            </tr>
+            <tr>
+                <td class="field">Empresa:</td>
+                <td class="label" colspan="3">{{ detail.client_name }}</td>
+                <td class="field">Teléfono:</td>
+                <td class="label">{{ detail.phone }}</td>
+            </tr>
+        </table>
+
+        {% if detail.descriptive_texts is defined and detail.descriptive_texts %}
+        {% for dt in detail.descriptive_texts %}
+        <div class="descriptive-section">
+            <div class="descriptive-title">{{ dt.exam_name }}</div>
+            <div class="descriptive-text">{{ dt.descriptive_text }}</div>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        {% for section in detail.sections %}
+        <div class="print">
+            <div class="seccion-title">{{ section.name }}</div>
+            {% for exam in section.exams %}
+            <div style="margin-bottom: 15px;" class="detail-result">
+                <b>{{ exam.exam_name }}</b>
+                {% for d in exam.details %}
+                <div>
+                    {% if detail.prevalidated is defined and detail.prevalidated and d.ima_result is defined and d.ima_result %}<p>{{ d.ima_result }}</p>{% endif %}
+                    <table cellspacing="2" cellpadding="2">
+                        <tr>
+                            <td class="analito">{{ d.analito }}</td>
+                            <td class="result">{{ d.result }}</td>
+                            <td class="result">{{ d.units }}</td>
+                            <td class="result">{{ d.min }}</td>
+                            {% if d.mid is defined and d.mid %}<td class="result">{{ d.mid }}</td>{% endif %}
+                            <td class="result">{{ d.max }}</td>
+                        </tr>
+                    </table>
+                </div>
+                {% endfor %}
+                <div class="row">
+                    {% if exam.processing_date is defined and exam.processing_date %}
+                    <span class="line-botton">Fecha procesado: {{ exam.processing_date }}{% if exam.processing_time is defined and exam.processing_time %} {{ exam.processing_time }}{% endif %}</span>
+                    {% endif %}
+                    {% if exam.validation_date is defined and exam.validation_date %}
+                    <span class="line-botton" style="margin-left: 20px;">Fecha validado: {{ exam.validation_date }}{% if exam.validation_time is defined and exam.validation_time %} {{ exam.validation_time }}{% endif %}</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            <div class="signature">
+                <img src="{{ section.signature }}" style="width: 450px; height: 180px" alt="">
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="barcode">
+            {% if barcode_img %}
+            <img src="{{ barcode_img }}" alt="">
+            {% endif %}
+        </div>
+    </div>
+
+    {% if detail.footer is defined and detail.footer %}
+    <div class="footer-logo">
+        <img src="{{ detail.footer }}" style="width: 100%; height: 200px; object-fit: contain;" alt="">
+    </div>
+    {% endif %}
+</body>
+</html>

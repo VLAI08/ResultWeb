@@ -1,0 +1,36 @@
+doctrine:
+    dbal:
+        default_connection: alpha
+        connections:
+            alpha:
+                url: '%env(resolve:ALPHA_DATABASE_URL)%'
+                driver: 'pdo_mysql'
+                charset: UTF8
+            beta:
+                url: '%env(resolve:BETA_DATABASE_URL)%'
+                driver: 'pdo_pgsql'
+                charset: UTF8
+    orm:
+        auto_generate_proxy_classes: '%kernel.debug%'
+        default_entity_manager: alpha
+        entity_managers:
+            alpha:
+                connection: alpha
+                auto_mapping: false
+                mappings:
+                    App:
+                        is_bundle: false
+                        type: attribute
+                        dir: '%kernel.project_dir%/src/Entity'
+                        prefix: "App\\Entity"
+                        alias: App
+            beta:
+                connection: beta
+                auto_mapping: false
+                mappings:
+                    App:
+                        is_bundle: false
+                        type: attribute
+                        dir: '%kernel.project_dir%/src/Entity'
+                        prefix: "App\\Entity"
+                        alias: AppBeta

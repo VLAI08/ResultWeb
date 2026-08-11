@@ -1,0 +1,20 @@
+<IfModule mod_negotiation.c>
+    Options -MultiViews
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Set the base if app is in subdirectory
+    RewriteBase /resultados/resultados/symfony44/public/
+
+    # Redirect to front controller if request is not a real file or dir
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [L]
+
+    # Pass Authorization headers to PHP
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+</IfModule>
+
+# If you use Apache without AllowOverride All, you can copy these rules to vhost.

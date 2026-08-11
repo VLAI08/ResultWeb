@@ -1,0 +1,23 @@
+# see https://symfony.com/doc/current/reference/configuration/framework.html
+framework:
+    secret: '%env(APP_SECRET)%'
+    default_locale: '%env(DEFAULT_LOCALE)%'
+    http_method_override: false
+    csrf_protection: true
+    form: true
+    assets: true
+    validation:
+        enable_annotations: true
+    session:
+        handler_id: null
+    router:
+        utf8: true
+
+    #esi: true
+    #fragments: true
+
+when@test:
+    framework:
+        test: true
+        session:
+            storage_factory_id: session.storage.factory.mock_file

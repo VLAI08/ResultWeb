@@ -1,0 +1,328 @@
+{% extends 'modern/base.html.twig' %}
+{% block title %}Clientes - Resultados en Línea{% endblock %}
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1><i class="bi bi-hospital text-primary me-2"></i>Clientes</h1>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ path('root') }}">Panel</a></li><li class="breadcrumb-item active" aria-current="page">Clientes</li></ol></nav>
+    </div>
+    <span class="stat-badge" id="clients-stat"><i class="bi bi-hospital"></i><span id="clients-count">Cargando...</span></span>
+</div>
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span><i class="bi bi-hospital text-primary me-1"></i> Clientes</span>
+        <div class="d-flex gap-2">
+            <input type="text" class="form-control form-control-sm" id="clients-search" placeholder="Buscar cliente..." style="width: 240px;">
+            <select class="form-select form-select-sm" id="clients-state" style="width: auto;" title="Filtrar por estado">
+                <option value="">Todos</option>
+                <option value="1">Activos</option>
+                <option value="0">Inactivos</option>
+            </select>
+            <button class="btn btn-sm btn-outline-secondary" id="clients-export" title="Exportar a Excel (CSV)"><i class="bi bi-file-earmark-excel"></i></button>
+            <button class="btn btn-sm btn-primary" id="clients-new"><i class="bi bi-plus-lg"></i> Nuevo</button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="v-heading">
+                    <tr>
+                        <th>#</th>
+                        <th>Código</th>
+                        <th>Nit</th>
+                        <th>Razón social</th>
+                        <th>Teléfono</th>
+                        <th>Correo electrónico</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="clients-tbody"></tbody>
+            </table>
+            <div class="text-center text-muted py-5 d-none" id="clients-empty">
+                <span class="empty-state"><i class="bi bi-hospital"></i>No se encontraron clientes.<br>
+                <button class="btn btn-sm btn-primary mt-3" id="clients-empty-new"><i class="bi bi-plus-lg"></i> Crear primer cliente</button></span>
+            </div>
+        </div>
+        <nav class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+            <span class="small text-muted" id="clients-count-footer"></span>
+            <div class="d-flex align-items-center gap-2">
+                <span class="small text-muted d-none d-md-inline">Registros por página:</span>
+                <select class="form-select form-select-sm" id="clients-page-size" style="width: auto;">
+                    <option value="10">10</option>
+                    <option value="15">15</option>
+                    <option value="30">30</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                <ul class="pagination pagination-sm mb-0" id="clients-pagination"></ul>
+            </div>
+        </nav>
+    </div>
+</div>
+
+<!-- Modal cliente -->
+<div class="modal fade" id="client-modal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="client-modal-title"><span class="modal-icon"><i class="bi bi-hospital"></i></span><span id="client-modal-title-text">Nuevo cliente</span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <form id="client-form" class="row g-2">
+                    <div class="col-md-6"><label class="form-label small">Código</label><textarea class="form-control form-control-sm" name="code" rows="2"></textarea></div>
+                    <div class="col-md-6"><label class="form-label small">Nit</label><input class="form-control form-control-sm" name="identificationNumber" required></div>
+                    <div class="col-md-6"><label class="form-label small">Razón social</label><input class="form-control form-control-sm" name="name" required></div>
+                    <div class="col-md-6"><label class="form-label small">Contraseña</label><input type="password" class="form-control form-control-sm" name="password" id="client-password" placeholder="Dejar en blanco para no cambiar"></div>
+                    <div class="col-md-6"><label class="form-label small">Confirmar contraseña</label><input type="password" class="form-control form-control-sm" name="password2" id="client-password2"></div>
+                    <div class="col-md-6"><label class="form-label small">Teléfono</label><input class="form-control form-control-sm" name="phone"></div>
+                    <div class="col-md-6"><label class="form-label small">Correo electrónico</label><input type="email" class="form-control form-control-sm" name="email"></div>
+                    <div class="col-md-6"><label class="form-label small">Contacto</label><input class="form-control form-control-sm" name="contact"></div>
+                    <div class="col-md-6"><label class="form-label small">Teléfono de contacto</label><input class="form-control form-control-sm" name="contactPhone"></div>
+                    <div class="col-md-6"><label class="form-label small">Dirección</label><input class="form-control form-control-sm" name="address"></div>
+                    <div class="col-md-6"><label class="form-label small">Estado</label><select class="form-select form-select-sm" name="active"><option value="1">Activo</option><option value="0">Inactivo</option></select></div>
+                    <div class="col-md-6">
+                        <label class="form-label small">Logo encabezado</label>
+                        <input type="file" class="form-control form-control-sm" name="files[]" id="client-header-file" accept="image/*">
+                        <img class="imagePreview d-none" id="client-header-preview">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">Logo pie de página</label>
+                        <input type="file" class="form-control form-control-sm" name="files[]" id="client-footer-file" accept="image/*">
+                        <img class="imagePreview d-none" id="client-footer-preview">
+                    </div>
+                    <input type="hidden" name="identificationType" value="{{ identification_type_client is defined ? identification_type_client : 'NI' }}">
+                    <input type="hidden" name="id" id="client-id">
+                </form>
+                <div class="alert alert-danger d-none mt-2" id="client-error"></div>
+                <div class="alert alert-warning d-none mt-2" id="client-password-warning">
+                    <i class="bi bi-info-circle"></i> Si deja la contraseña en blanco, se mantendrá la actual.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="client-save">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+    var page = 1, limit = 10, totalPages = 1, lastItems = [], searchTimer = null;
+
+    function load() {
+        var tbody = document.getElementById('clients-tbody');
+        window.skeletonRows(tbody, limit, 8);
+        document.getElementById('clients-empty').classList.add('d-none');
+        var q = new URLSearchParams({
+            page: page, recordPerPage: limit,
+            parameter: document.getElementById('clients-search').value.trim()
+        });
+        var st = document.getElementById('clients-state').value;
+        if (st !== '') { q.set('active', st); }
+        window.apiFetch('/api/clients?' + q.toString())
+            .then(function (res) {
+                var items = res.content || [];
+                lastItems = items;
+                totalPages = Math.max(1, Math.ceil((res.totalRecord || 0) / limit));
+                document.getElementById('clients-count').textContent = (res.totalRecord || 0) + ' cliente(s)';
+                document.getElementById('clients-count-footer').textContent = (res.totalRecord || 0) + ' cliente(s)';
+                document.getElementById('clients-page-size').value = String(limit);
+                var tbody = document.getElementById('clients-tbody');
+                tbody.innerHTML = '';
+                document.getElementById('clients-empty').classList.toggle('d-none', items.length > 0);
+                items.forEach(function (u, i) {
+                    var tr = document.createElement('tr');
+                    tr.innerHTML = '<td>' + ((page - 1) * limit + i + 1) + '</td>' +
+                        '<td>' + window.esc(u.code || '') + '</td>' +
+                        '<td>' + window.esc(u.identification || '') + '</td>' +
+                        '<td class="fw-semibold">' + window.esc(u.names || '') + '</td>' +
+                        '<td>' + window.esc(u.phones || '') + '</td>' +
+                        '<td>' + window.esc(u.email || '') + '</td>' +
+                        '<td>' + (u.active ? '<span class="badge badge-soft-success">Activo</span>' : '<span class="badge badge-soft-secondary">Inactivo</span>') + '</td>' +
+                        '<td class="text-end"><div class="dropdown">' +
+                        '<button class="dropdown-actions" data-dd-toggle title="Acciones"><i class="bi bi-three-dots-vertical"></i></button>' +
+                        '<ul class="dropdown-menu dropdown-menu-end" data-dd-menu>' +
+                        '<li><a class="dropdown-item" href="#" data-edit="' + u.id + '"><i class="bi bi-pencil"></i> Editar</a></li>' +
+                        (u.active ? '<li><a class="dropdown-item text-danger" href="#" data-delete="' + u.id + '"><i class="bi bi-x-circle"></i> Inactivar</a></li>' : '') +
+                        '</ul></div></td>';
+                    tbody.appendChild(tr);
+                });
+                renderPagination();
+            })
+            .catch(function () {});
+    }
+
+    function renderPagination() {
+        var ul = document.getElementById('clients-pagination');
+        ul.innerHTML = '';
+        var mk = function (label, target, disabled) {
+            var li = document.createElement('li');
+            li.className = 'page-item' + (disabled ? ' disabled' : '') + (target === page ? ' active' : '');
+            var a = document.createElement('a');
+            a.className = 'page-link';
+            a.href = '#';
+            a.textContent = label;
+            a.onclick = function (e) { e.preventDefault(); if (!disabled) { page = target; load(); } };
+            li.appendChild(a);
+            return li;
+        };
+        ul.appendChild(mk('«', Math.max(1, page - 1), page === 1));
+        for (var p = 1; p <= totalPages; p++) {
+            if (totalPages > 7 && p > 2 && p < totalPages - 1 && p !== page) { continue; }
+            ul.appendChild(mk(String(p), p, false));
+        }
+        ul.appendChild(mk('»', Math.min(totalPages, page + 1), page === totalPages));
+    }
+
+    function sendPayload() {
+        var f = document.getElementById('client-form');
+        var id = document.getElementById('client-id').value;
+        var password = f.querySelector('[name="password"]').value;
+        var password2 = f.querySelector('[name="password2"]').value;
+        var errBox = document.getElementById('client-error');
+        errBox.classList.add('d-none');
+
+        if (password !== password2) {
+            errBox.textContent = 'Las contraseñas no coinciden. Por favor, verifica.';
+            errBox.classList.remove('d-none');
+            return;
+        }
+        if (!id && password === '') {
+            errBox.textContent = 'La contraseña es obligatoria para crear un cliente.';
+            errBox.classList.remove('d-none');
+            return;
+        }
+
+        var body = {};
+        new FormData(f).forEach(function (v, k) {
+            if (k !== 'files[]' && k !== 'password2') { body[k] = v; }
+        });
+        if (id) {
+            delete body.password;
+            delete body.identificationType;
+            if (password !== '') { body.password = password; }
+        } else {
+            delete body.id;
+        }
+        var fd = new FormData();
+        var headerFile = document.getElementById('client-header-file').files[0];
+        var footerFile = document.getElementById('client-footer-file').files[0];
+        if (headerFile) { fd.append('files[]', headerFile); }
+        if (footerFile) { fd.append('files[]', footerFile); }
+        fd.append('body', JSON.stringify(body));
+        var saveBtn = document.getElementById('client-save');
+        window.setLoading(saveBtn, true, 'Guardando...');
+        window.apiFetch('/api/clients/' + (id || ''), { method: id ? 'PATCH' : 'POST', body: fd, silent: true })
+            .then(function () {
+                bootstrap.Modal.getInstance(document.getElementById('client-modal')).hide();
+                window.showToast(id ? 'Cliente actualizado correctamente' : 'Cliente creado correctamente', 'success');
+                load();
+            })
+            .catch(function (err) {
+                errBox.textContent = err.message || 'Error al guardar el cliente.';
+                errBox.classList.remove('d-none');
+            })
+            .finally(function () { window.setLoading(saveBtn, false); });
+    }
+
+    function showPreview(input, preview) {
+        if (input.files && input.files[0]) {
+            preview.src = URL.createObjectURL(input.files[0]);
+            preview.classList.remove('d-none');
+        }
+    }
+
+    document.getElementById('clients-empty-new').addEventListener('click', function () {
+        document.getElementById('clients-new').click();
+    });
+    document.getElementById('clients-search').addEventListener('input', function () {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(function () { page = 1; load(); }, 300);
+    });
+    document.getElementById('clients-state').addEventListener('change', function () { page = 1; load(); });
+    document.getElementById('clients-page-size').addEventListener('change', function () {
+        limit = parseInt(this.value, 10) || 10;
+        page = 1;
+        load();
+    });
+    document.getElementById('clients-new').addEventListener('click', function () {
+        var f = document.getElementById('client-form');
+        f.reset();
+        document.getElementById('client-id').value = '';
+        document.getElementById('client-password').removeAttribute('disabled');
+        document.getElementById('client-modal-title-text').textContent = 'Nuevo cliente';
+        document.getElementById('client-error').classList.add('d-none');
+        document.getElementById('client-password-warning').classList.add('d-none');
+        document.getElementById('client-header-preview').classList.add('d-none');
+        document.getElementById('client-footer-preview').classList.add('d-none');
+        new bootstrap.Modal(document.getElementById('client-modal')).show();
+    });
+
+    document.getElementById('client-header-file').addEventListener('change', function () { showPreview(this, document.getElementById('client-header-preview')); });
+    document.getElementById('client-footer-file').addEventListener('change', function () { showPreview(this, document.getElementById('client-footer-preview')); });
+
+    document.getElementById('clients-tbody').addEventListener('click', function (e) {
+        var edit = e.target.closest('[data-edit]');
+        var del = e.target.closest('[data-delete]');
+        if (edit) {
+            e.preventDefault();
+            window.apiFetch('/api/clients/' + edit.dataset.edit)
+            .then(function (u) {
+                var f = document.getElementById('client-form');
+                ['code', 'identification', 'names', 'phones', 'email', 'contact', 'phoneContact', 'address', 'active'].forEach(function (k) {
+                    var i = f.querySelector('[name="' + k + '"]');
+                    if (!i) { return; }
+                    if (k === 'active') { i.value = u.active ? '1' : '0'; }
+                    else { i.value = u[k] != null ? u[k] : ''; }
+                });
+                document.getElementById('client-id').value = u.id;
+                f.querySelector('[name="password"]').value = '';
+                f.querySelector('[name="password2"]').value = '';
+                document.getElementById('client-modal-title-text').textContent = 'Editar cliente ' + (u.identification || '');
+                document.getElementById('client-error').classList.add('d-none');
+                document.getElementById('client-password-warning').classList.remove('d-none');
+                document.getElementById('client-header-preview').classList.add('d-none');
+                document.getElementById('client-footer-preview').classList.add('d-none');
+                new bootstrap.Modal(document.getElementById('client-modal')).show();
+            })
+            .catch(function () {});
+        }
+        if (del) {
+            e.preventDefault();
+            window.showConfirm('¿Está seguro que desea inactivar este cliente?', 'Inactivar cliente', function () {
+                window.apiFetch('/api/clients/' + del.dataset.delete, { method: 'DELETE', silent: true })
+                    .then(function () {
+                        window.showToast('Cliente inactivado correctamente', 'success');
+                        load();
+                    })
+                    .catch(function () {});
+            });
+        }
+    });
+
+    // Exportar listado actual a CSV (compatible con Excel)
+    document.getElementById('clients-export').addEventListener('click', function () {
+        if (!lastItems.length) { window.showToast('No hay datos para exportar', 'warning'); return; }
+        var headers = ['Código', 'Nit', 'Razón social', 'Teléfono', 'Correo', 'Contacto', 'Estado'];
+        var rows = lastItems.map(function (u) {
+            return [u.code || '', u.identification || '', u.names || '', u.phones || '', u.email || '', u.contact || '', u.active ? 'Activo' : 'Inactivo'];
+        });
+        var csv = '\uFEFF' + headers.join(';') + '\n' + rows.map(function (r) {
+            return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(';');
+        }).join('\n');
+        var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'clientes.csv';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 100);
+    });
+
+    document.getElementById('client-save').addEventListener('click', sendPayload);
+
+    load();
+})();
+</script>
+{% endblock %}
