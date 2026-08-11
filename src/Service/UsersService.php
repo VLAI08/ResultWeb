@@ -43,8 +43,31 @@ class UsersService
         $result = ['state' => '-112', 'message' => 'Error al ingresar, Datos Incorrectos'];
 
         $repo = $this->alphaEm()->getRepository(Users::class);
-        $user = $repo->findOneBy(['identification' => $username, 'identificationtype' => $identificationType]);
-        if (!$user) {
+        $existing = $repo->findBy(['identification' => $username, 'identificationtype' => $identificationType]);
+        if (!$existing) {
+            // Si el paciente cambió de tipo de documento (TI→CC, etc.), se busca solo por
+            // identificación para no crear un duplicado y conservar su historial.
+            $existing = $repo->findBy(['identification' => $username]);
+        }
+        if ($existing) {
+            // Si hay duplicados con la misma cédula, se elige el mejor registro:
+            // activo y con el nombre más completo (los duplicados suelen tener variaciones).
+            $user = $existing[0];
+            if (count($existing) > 1) {
+                $best = null;
+                $bestScore = -1000;
+                foreach ($existing as $u) {
+                    $score = mb_strlen(trim((string) $u->getNames() . ' ' . (string) $u->getLastnames()), 'UTF-8');
+                    if (!$u->getActive()) { $score -= 1000; }
+                    // Desempate: a igual puntuación se prefiere el registro más reciente (mayor id).
+                    if ($score > $bestScore || ($score === $bestScore && $best && (int) $u->getId() > (int) $best->getId())) {
+                        $bestScore = $score;
+                        $best = $u;
+                    }
+                }
+                $user = $best ?: $existing[0];
+            }
+        } else {
             $user = $this->autoRegister($username, $identificationType);
             if (!$user) {
                 return $result;
@@ -106,15 +129,60 @@ class UsersService
             } else {
                 $row = $this->betaConn()->fetchAssociative(
                     "SELECT email FROM public.paciente
-                     WHERE historia = :h AND tipodcto_cod = :td
+                     WHERE historia = :h
                      ORDER BY fecha DESC LIMIT 1",
-                    ['h' => $identification, 'td' => $identificationType]
+                    ['h' => $identification]
                 );
             }
         } catch (\Throwable $e) {
             return '';
         }
         return trim((string) ($row['email'] ?? ''));
+    }
+
+    /**
+     * Elige el mejor registro de paciente para el auto-registro.
+     * Se descartan nombres vacíos o de relleno y se prioriza el nombre más completo
+     * (más caracteres, con teléfono/dirección/correo), desempatando por fecha de ingreso
+     * más reciente. Así, si el último ingreso tiene el nombre mal escrito o incompleto,
+     * se usa un registro anterior mejor.
+     */
+    public function bestPatientRow(string $identification, string $identificationType): ?array
+    {
+        $rows = $this->betaConn()->fetchAllAssociative(
+            "SELECT historia, nom1, ape1, tipodcto_cod, telefono, direccion, sexo, email
+             FROM public.paciente
+             WHERE historia = :h
+             ORDER BY fecha DESC, hora DESC
+             LIMIT 20",
+            ['h' => $identification]
+        );
+        if (!$rows) {
+            return null;
+        }
+
+        $fillers = ['N/N', 'NN', 'N A', 'SIN NOMBRE', 'PENDIENTE', 'NO REGISTRA', 'NO APLICA', 'X'];
+        $best = null;
+        $bestScore = -1000;
+        foreach ($rows as $row) {
+            $name = trim((string) ($row['nom1'] ?? '') . ' ' . (string) ($row['ape1'] ?? ''));
+            $name = (string) preg_replace('/\s+/u', ' ', $name);
+            $upper = mb_strtoupper(trim($name), 'UTF-8');
+
+            if (mb_strlen($upper, 'UTF-8') < 5 || in_array($upper, $fillers, true)) {
+                $score = -100;
+            } else {
+                $score = mb_strlen($name, 'UTF-8');
+                if (trim((string) ($row['telefono'] ?? '')) !== '') { $score += 20; }
+                if (trim((string) ($row['direccion'] ?? '')) !== '') { $score += 10; }
+                if (trim((string) ($row['email'] ?? '')) !== '') { $score += 5; }
+            }
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $best = $row;
+            }
+        }
+        return $best ?: $rows[0];
     }
 
     /**
@@ -154,13 +222,7 @@ class UsersService
             return $u;
         }
 
-        $row = $this->betaConn()->fetchAssociative(
-            "SELECT historia, nom1, ape1, tipodcto_cod, telefono, direccion, sexo, email
-             FROM public.paciente
-             WHERE historia = :h AND tipodcto_cod = :td
-             ORDER BY fecha DESC LIMIT 1",
-            ['h' => $identification, 'td' => $identificationType]
-        );
+        $row = $this->bestPatientRow($identification, $identificationType);
         if (!$row) {
             return null;
         }
@@ -197,6 +259,36 @@ class UsersService
             return $repo->findOneBy(['identification' => $ident, 'identificationtype' => $identType, 'isadmin' => false]);
         }
         return $repo->findOneBy(['identification' => $ident, 'isadmin' => false]);
+    }
+
+    /**
+     * Devuelve el mejor usuario para iniciar sesión con una identificación:
+     * busca por identificación (sin importar el tipo de documento, para cubrir
+     * cambios TI→CC, etc.); si hay duplicados se elige el activo con el nombre
+     * más completo. Devuelve null si no hay ninguno.
+     */
+    public function bestUserForLogin(string $identification, string $identificationType): ?array
+    {
+        $existing = $this->alphaEm()->getRepository(Users::class)->findBy([
+            'identification' => $identification,
+        ]);
+        if (!$existing) {
+            return null;
+        }
+        $best = $existing[0];
+        if (count($existing) > 1) {
+            $bestScore = -1000;
+            foreach ($existing as $u) {
+                $score = mb_strlen(trim((string) $u->getNames() . ' ' . (string) $u->getLastnames()), 'UTF-8');
+                if (!$u->getActive()) { $score -= 1000; }
+                // Desempate: a igual puntuación se prefiere el registro más reciente (mayor id).
+                if ($score > $bestScore || ($score === $bestScore && (int) $u->getId() > (int) $best->getId())) {
+                    $bestScore = $score;
+                    $best = $u;
+                }
+            }
+        }
+        return $best->toArray();
     }
 
     public function findUserById(int $id): ?Users
@@ -377,6 +469,11 @@ class UsersService
                 if (trim((string) ($r['email'] ?? '')) === '' && isset($emails[$key])) {
                     $r['email'] = $emails[$key];
                 }
+                // Para pacientes el correo se busca solo por identificación (cubre cambios de tipo).
+                if (trim((string) ($r['email'] ?? '')) === '' && ($r['type'] ?? '') !== 'company'
+                    && isset($emails[(string) ($r['identification'] ?? '')])) {
+                    $r['email'] = $emails[(string) ($r['identification'] ?? '')];
+                }
             }
         }
 
@@ -429,16 +526,17 @@ class UsersService
         $map = [];
         if ($persons) {
             try {
-                $in = implode(',', array_map(fn (string $k) => "('" . str_replace("'", "''", (string) explode('|', $k)[0]) . "','" . str_replace("'", "''", (string) explode('|', $k)[1]) . "')", array_keys($persons)));
+                $ids = array_map(fn (string $k) => (string) explode('|', $k)[0], array_keys($persons));
+                $in = implode(',', array_map(fn (string $v) => "'" . str_replace("'", "''", $v) . "'", array_unique($ids)));
                 $rowsP = $this->betaConn()->fetchAllAssociative(
-                    "SELECT DISTINCT ON (historia, tipodcto_cod) historia, tipodcto_cod, email
+                    "SELECT DISTINCT ON (historia) historia, email
                      FROM public.paciente
-                     WHERE (historia, tipodcto_cod) IN ($in)
+                     WHERE historia IN ($in)
                        AND email IS NOT NULL AND email != ''
-                     ORDER BY historia, tipodcto_cod, fecha DESC, hora DESC"
+                     ORDER BY historia, fecha DESC, hora DESC"
                 );
                 foreach ($rowsP as $row) {
-                    $map[$row['historia'] . '|' . $row['tipodcto_cod']] = (string) $row['email'];
+                    $map[$row['historia']] = (string) $row['email'];
                 }
             } catch (\Throwable $e) {
                 // WinsisLab es solo lectura: si la consulta falla, se continúa sin correo.

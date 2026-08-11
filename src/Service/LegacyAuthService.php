@@ -34,6 +34,14 @@ class LegacyAuthService
                 'username' => $username,
                 'password' => $password,
             ]);
+            // Si hay usuarios duplicados con la misma identificación (nombres variados),
+            // se prefiere el activo con el nombre más completo.
+            if ($row && !empty($row['id']) && (($row['type'] ?? '') !== 'admin')) {
+                $best = $this->usersService->bestUserForLogin($username, $identificationType);
+                if ($best) {
+                    $row = $best;
+                }
+            }
         }
 
         // 2. Tabla users + auto-registro (WinsisLab)

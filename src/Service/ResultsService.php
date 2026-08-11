@@ -31,6 +31,8 @@ class ResultsService
 
     /**
      * Lista de solicitudes (órdenes) de un paciente por identificación.
+     * Se busca por historia (número de documento) sin filtrar por tipo de documento,
+     * para que pacientes que cambiaron de tipo (TI→CC, etc.) vean TODO su historial.
      * Devuelve: client_code, request_code, reception_date, exams, url, prevalidated.
      */
     public function findByIdentification(string $identificationNumber, string $identificationType, bool $isPatient): array
@@ -53,7 +55,7 @@ class ResultsService
                 FROM paciente pa
                 INNER JOIN paciente_examenes pe ON (pa.historia = pe.historia AND pa.paciente_cod = pe.paciente_cod) AND pa.sede_codigo != '11'
                 INNER JOIN clientes cl ON pa.clte_codigo = cl.clte_codigo
-                WHERE pa.historia = :historia AND pa.tipodcto_cod = :tipo
+                WHERE pa.historia = :historia
                   AND pa.clte_codigo != 'A'
                   AND pe.examen != 'CONSE'
                   AND pe.examen NOT LIKE 'NMX%' AND pe.examen NOT LIKE 'PPDF%'
@@ -64,7 +66,6 @@ class ResultsService
 
         $rows = $this->beta()->fetchAllAssociative($sql, [
             'historia' => $identificationNumber,
-            'tipo' => $identificationType,
         ]);
 
         return $this->filterExams($rows);
@@ -89,6 +90,9 @@ class ResultsService
         if ($identificationNumber) {
             $filters .= 'AND pa.historia = :historia ';
             $params['historia'] = $identificationNumber;
+            // Si se busca por número de documento, se ignora el tipo: el historial
+            // puede estar repartido en varios tipos (TI→CC, etc.).
+            $identificationType = null;
         }
         if ($identificationType) {
             $filters .= 'AND pa.tipodcto_cod = :tipo ';
