@@ -61,6 +61,26 @@ php -S 127.0.0.1:8090 -t public
 
 Acceda a `http://127.0.0.1:8090`.
 
+## Producción
+
+1. Compile la caché de producción:
+
+```bash
+php bin/console cache:clear --env=prod
+```
+
+2. Configure el servidor web (Apache/Nginx) con document root en `public/` y `APP_ENV=prod` como variable de entorno real del servidor (en Apache: `SetEnv APP_ENV prod` en el vhost; en Nginx: `fastcgi_param APP_ENV prod;`).
+
+3. El `.env.local` debe tener `APP_ENV=prod` y un `APP_SECRET` robusto (único por instalación).
+
+4. Si usa el servidor PHP integrado (`php -S`) en producción, asegúrese de que las variables de entorno lleguen a PHP añadiendo `-d variables_order=EGPCS`:
+
+```bash
+APP_ENV=prod php -d variables_order=EGPCS -S 0.0.0.0:8090 -t public
+```
+
+5. La página de error personalizada se muestra automáticamente en producción (404/403/500).
+
 ## Estructura
 
 - `src/Controller/` — controladores web (auth, home, admin, resultados) y API (`src/Controller/Api/`).
