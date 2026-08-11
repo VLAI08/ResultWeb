@@ -257,7 +257,6 @@
     document.getElementById('patients-tbody').addEventListener('click', function (e) {
         var edit = e.target.closest('[data-edit]');
         var del = e.target.closest('[data-delete]');
-        console.log('[TBODY] click: edit=' + !!edit + ' del=' + !!del);
         if (edit) {
             e.preventDefault();
             window.apiFetch('/api/users/' + edit.dataset.edit)
