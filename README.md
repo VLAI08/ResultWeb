@@ -1,21 +1,35 @@
 # ResultWeb
 
-Sistema web de **resultados de laboratorio en línea** (port Symfony de un sistema legacy). Permite a pacientes consultar y descargar sus resultados, a empresas (clientes del laboratorio) gestionar los resultados de sus pacientes, y al administrador administrar pacientes, clientes, firmas, parámetros y estadísticas.
+Sistema web de **resultados de laboratorio en línea** — port en Symfony de un sistema legacy. Permite a pacientes consultar y descargar sus resultados, a empresas (clientes del laboratorio) gestionar los resultados de sus pacientes, y al administrador administrar pacientes, clientes, firmas, parámetros y estadísticas.
+
+- **Framework**: Symfony 7.4 LTS (PHP 8.2+)
+- **Frontend**: Twig + Bootstrap 5.3 (CDN) + JavaScript vanilla
+- **Base de datos**: MySQL (tablas del sistema: `users`, `firms`, `domains`) y PostgreSQL (WinsisLab: resultados de laboratorio, solo lectura)
+- **Repositorio**: https://github.com/VLAI08/ResultWeb (privado)
+
+## Documentación
+
+| Documento | Contenido |
+|---|---|
+| [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) | Arquitectura, flujos, módulos y estructura del código |
+| [docs/API.md](docs/API.md) | Contratos de todos los endpoints (páginas, APIs y PDF) |
+| [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md) | Despliegue en desarrollo y producción |
+| [docs/PRUEBAS.md](docs/PRUEBAS.md) | Credenciales de prueba y checklist de verificación |
 
 ## Características
 
-- **Autenticación** con auto-registro de pacientes/empresas desde la base de datos del laboratorio (WinsisLab), protección anti fuerza bruta y recuperación de contraseña por código de verificación.
-- **Pacientes**: consulta y descarga de resultados en PDF (con código de barras, firmas de médicos, textos descriptivos y marca de agua para resultados preliminares), validación de pago.
-- **Empresas (clientes)**: búsqueda de pacientes, visualización de solicitudes y descarga de PDFs; dashboard con sus estadísticas.
-- **Administración**: CRUD de pacientes, clientes (con logos), firmas y parámetros; dashboard general con estadísticas; exportación a Excel (CSV); búsquedas con filtros y debounce; modo oscuro.
+- **Autenticación** con auto-registro de pacientes/empresas desde WinsisLab, protección anti fuerza bruta (5 intentos → 5 min de bloqueo) y recuperación de contraseña por código de verificación por correo.
+- **Pacientes**: consulta y descarga de resultados en PDF (código de barras, firmas de médicos, textos descriptivos, marca de agua para resultados preliminares) y validación de pago.
+- **Empresas (clientes)**: búsqueda de pacientes, solicitudes y descarga de PDFs; dashboard con estadísticas.
+- **Administración**: CRUD de pacientes, clientes (con logos), firmas y parámetros; dashboard con estadísticas; exportación CSV; filtros con debounce; modo oscuro.
 - **PDFs**: generados con dompdf (plantillas Twig) o descargados desde FTP cuando el archivo ya está publicado.
-- **Seguridad**: endpoints API protegidos por sesión, validación de archivos (MIME y tamaño), prevención de path traversal y SQL injection.
+- **Seguridad**: APIs protegidas por sesión, validación MIME/tamaño de subidas, protección contra path traversal y SQL injection.
 
 ## Requisitos
 
-- **Symfony 6.4 LTS** con PHP 8.2+ y extensiones: `pdo_mysql`, `pdo_pgsql`, `fileinfo`, `mbstring`, `gd` (para PDF), `ftp` (opcional, para descarga de resultados publicados).
-- Composer 2.
-- MySQL y PostgreSQL (o solo MySQL si los resultados se sirven desde otra vía).
+- PHP 8.2+ con extensiones: `pdo_mysql`, `pdo_pgsql`, `fileinfo`, `mbstring`, `gd` (PDF), `ftp` (opcional), `curl`
+- Composer 2
+- MySQL y PostgreSQL (o solo MySQL si los resultados se sirven por otra vía)
 
 ## Instalación
 
@@ -25,7 +39,7 @@ composer install
 
 ## Configuración
 
-Cree el archivo `.env.local` (no está versionado) con sus credenciales:
+Cree el archivo `.env.local` (no versionado) con sus credenciales:
 
 ```dotenv
 APP_ENV=dev
@@ -34,7 +48,7 @@ APP_SECRET=un-secreto-aleatorio
 # Conexión 1 (alpha): tabla users/firms/domains del sistema
 ALPHA_DATABASE_URL="mysql://usuario:password@host:3306/basededatos?charset=UTF8"
 
-# Conexión 2 (beta): resultados del laboratorio (WinsisLab)
+# Conexión 2 (beta): resultados del laboratorio (WinsisLab, solo lectura)
 BETA_DATABASE_URL="postgresql://usuario:password@host:5432/DBWINSISLAB?charset=UTF8"
 
 # FTP (opcional) para descargar PDFs ya publicados
@@ -44,7 +58,7 @@ FTP_PASS=password
 FTP_PORT=21
 ```
 
-Autenticación legacy (opcional, para conectar con el esquema existente de `users`):
+Autenticación legacy (opcional, esquema existente de `users`):
 
 ```dotenv
 LEGACY_AUTH_CONNECTION=alpha
@@ -59,37 +73,15 @@ LEGACY_ADMIN_AUTH_SQL="SELECT id, 'admin' AS type, code, identification, identif
 php -S 127.0.0.1:8090 -t public
 ```
 
-Acceda a `http://127.0.0.1:8090`.
+Ver [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md) para entornos, caché de producción y servidores web.
 
-## Producción
-
-1. Compile la caché de producción:
+## Comandos útiles
 
 ```bash
-php bin/console cache:clear --env=prod
+php bin/console cache:clear                # limpiar caché dev
+php bin/console cache:clear --env=prod     # limpiar caché prod
+php bin/console lint:twig templates        # validar plantillas
+php bin/console lint:container             # validar container
+php bin/console about                      # versión de Symfony
+php bin/console debug:router               # listar rutas
 ```
-
-2. Configure el servidor web (Apache/Nginx) con document root en `public/` y `APP_ENV=prod` como variable de entorno real del servidor (en Apache: `SetEnv APP_ENV prod` en el vhost; en Nginx: `fastcgi_param APP_ENV prod;`).
-
-3. El `.env.local` debe tener `APP_ENV=prod` y un `APP_SECRET` robusto (único por instalación).
-
-4. Si usa el servidor PHP integrado (`php -S`) en producción, asegúrese de que las variables de entorno lleguen a PHP añadiendo `-d variables_order=EGPCS`:
-
-```bash
-APP_ENV=prod php -d variables_order=EGPCS -S 0.0.0.0:8090 -t public
-```
-
-5. La página de error personalizada se muestra automáticamente en producción (404/403/500).
-
-## Estructura
-
-- `src/Controller/` — controladores web (auth, home, admin, resultados) y API (`src/Controller/Api/`).
-- `src/Service/` — lógica de negocio (auth, resultados, PDF, FTP, archivos, usuarios, dominios, firmas).
-- `templates/` — plantillas Twig (layout moderno en `templates/modern/`, módulos admin en `templates/admin/`).
-- `public/static/` — imágenes base y archivos subidos (upload/ no se versiona).
-
-## Notas
-
-- Las contraseñas se almacenan en texto plano (compatibilidad con el sistema legacy).
-- La base de datos WinsisLab (beta) es de **solo lectura**: el sistema únicamente la consulta.
-- El login exige un tipo de documento válido; el auto-registro crea el usuario en `users` con la contraseña por defecto = número de identificación (debe cambiarse en el primer ingreso).
