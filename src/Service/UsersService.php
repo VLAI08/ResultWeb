@@ -496,7 +496,18 @@ class UsersService
             'type' => $user->getType(),
             'email' => '',
         ]]);
-        return $map[($user->getIdentification() ?? '') . '|' . ($user->getIdentificationtype() ?? '')] ?? '';
+        $key = ($user->getIdentification() ?? '') . '|' . ($user->getIdentificationtype() ?? '');
+        if (isset($map[$key])) {
+            return $map[$key];
+        }
+        // Para pacientes el correo se busca solo por identificación (cubre cambios de tipo TI→CC).
+        if ($user->getType() !== 'company') {
+            $id = (string) ($user->getIdentification() ?? '');
+            if (isset($map[$id])) {
+                return $map[$id];
+            }
+        }
+        return '';
     }
 
     /**
