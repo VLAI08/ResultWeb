@@ -5,13 +5,14 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # Set the base if app is in subdirectory
-    RewriteBase /resultados/resultados/symfony44/public/
+    # Base automática: funciona tanto por vhost (resultados44.local) como por subdirectorio.
+    RewriteCond %{REQUEST_URI}::$1 ^(/.+)(.+)::\2$
+    RewriteRule ^(.*) - [E=BASE:%1]
 
     # Redirect to front controller if request is not a real file or dir
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^ index.php [L]
+    RewriteRule .? %{ENV:BASE}/index.php [L]
 
     # Pass Authorization headers to PHP
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
