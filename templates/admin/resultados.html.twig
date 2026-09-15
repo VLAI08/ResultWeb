@@ -4,7 +4,7 @@
 {% set sessionUser = app.session.get('user') %}
 <div class="page-head">
     <div>
-        <h1><i class="bi bi-file-text text-primary me-2"></i>Resultados</h1>
+        <h1><span class="head-icon"><i class="bi bi-file-text"></i></span>Resultados</h1>
         <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ path('root') }}">Panel</a></li><li class="breadcrumb-item active" aria-current="page">Resultados</li></ol></nav>
     </div>
 </div>
@@ -37,9 +37,14 @@
                 <label class="form-label small">Nombre</label>
                 <input type="text" class="form-control form-control-sm" name="name" placeholder="Nombre del paciente">
             </div>
-            <div class="col-12 d-flex gap-2">
+            <div class="col-12 d-flex align-items-center gap-2 flex-wrap">
                 <button class="btn btn-primary btn-sm" type="submit" id="results-search-btn"><i class="bi bi-search"></i> Buscar</button>
                 <button class="btn btn-outline-secondary btn-sm" type="button" id="results-clear">Limpiar</button>
+                <span class="vr d-none d-md-inline"></span>
+                <span class="small text-muted d-none d-md-inline me-1">Rango rápido:</span>
+                <button class="btn btn-outline-primary btn-sm" type="button" data-preset="today"><i class="bi bi-calendar-day"></i> Hoy</button>
+                <button class="btn btn-outline-primary btn-sm" type="button" data-preset="7d"><i class="bi bi-calendar-week"></i> 7 días</button>
+                <button class="btn btn-outline-primary btn-sm" type="button" data-preset="30d"><i class="bi bi-calendar-month"></i> 30 días</button>
             </div>
         </form>
     </div>
@@ -183,6 +188,17 @@
     }
 
     var form = document.getElementById('results-form');
+    document.querySelectorAll('[data-preset]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var days = this.dataset.preset === 'today' ? 0 : (this.dataset.preset === '7d' ? 7 : 30);
+            var end = new Date();
+            var start = new Date();
+            start.setDate(start.getDate() - days);
+            function iso(d) { return d.toISOString().slice(0, 10); }
+            form.querySelector('[name="start_date"]').value = iso(start);
+            form.querySelector('[name="end_date"]').value = iso(end);
+        });
+    });
     form.addEventListener('submit', function (e) {
         e.preventDefault();
         var btn = document.getElementById('results-search-btn');
@@ -205,11 +221,11 @@
                 if (res.error) { window.showToast(res.error, 'warning'); }
                 (res.items || []).forEach(function (p, i) {
                     var tr = document.createElement('tr');
-                    tr.innerHTML = '<td>' + (i + 1) + '</td>' +
-                        '<td>' + window.esc(p.identification_number) + '</td>' +
+                    tr.innerHTML = '<td class="cell-num">' + (i + 1) + '</td>' +
+                        '<td class="mono" style="font-size:.85rem;">' + window.esc(p.identification_number) + '</td>' +
                         '<td class="fw-semibold">' + window.esc(p.full_name) + '</td>' +
-                        '<td>' + window.esc(p.phone) + '</td>' +
-                        '<td>' + window.esc(p.address) + '</td>' +
+                        '<td class="mono" style="font-size:.8rem;">' + window.esc(p.phone || '—') + '</td>' +
+                        '<td class="small text-muted">' + window.esc(p.address || '—') + '</td>' +
                         '<td><button class="btn btn-sm btn-outline-primary" data-exams="' + window.esc(p.identification_number) + '|' + window.esc(p.identification_type) + '|' + window.esc(p.full_name) + '"><i class="bi bi-journal-text"></i> Ver solicitudes</button></td>' +
                         '<td></td>';
                     tr.querySelector('[data-exams]').addEventListener('click', function () {
@@ -243,7 +259,7 @@
                 items.forEach(function (r, i) {
                     var tr = document.createElement('tr');
                     tr.innerHTML = '<td>' + (i + 1) + '</td>' +
-                        '<td class="fw-semibold">' + window.esc(r.request_code) + '</td>' +
+                        '<td class="fw-semibold mono">' + window.esc(r.request_code) + '</td>' +
                         '<td>' + window.esc(r.reception_date) + '</td>' +
                         '<td>' + window.esc(r.exams) + '</td>' +
                         '<td>' + (r.prevalidated ? '<span class="badge badge-soft-warning">Validado Preliminar</span>' : '<span class="badge badge-soft-success">Validado</span>') + '</td>' +

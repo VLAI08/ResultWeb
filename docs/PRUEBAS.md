@@ -2,26 +2,28 @@
 
 ## Credenciales de prueba (entorno local)
 
+Las credenciales de demostración se definen en el entorno local (no versionar contraseñas reales).
+
 | Perfil | Usuario | Contraseña | Tipo doc. | Notas |
 |---|---|---|---|---|
-| Administrador | `admin` | `LcslResult2023$` | CC | Acceso total |
-| Paciente | `23008709` | `23008709` | CC | Dashboard de paciente |
-| Empresa (cliente) | `900701859-2` | `900701859-2` | NI | OPTYMUS, dashboard de empresa |
+| Administrador | `admin` | *(definida en el entorno local)* | CC | Acceso total |
+| Paciente | *(cédula de prueba)* | *(su identificación por defecto)* | CC | Dashboard de paciente |
+| Empresa (cliente) | *(NIT de prueba)* | *(su identificación por defecto)* | NI | Dashboard de empresa |
 
 ### Casos especiales de pacientes
 
 | Identificación | Tipo | Qué valida |
 |---|---|---|
-| `1048460045` | CC | Dos usuarios duplicados; el mejor registro es id `277527` |
-| `1044911324` | CC | Email vacío en DB → se resuelve desde WinsisLab (histórico) |
-| `1143350248` | AS/CC | Misma persona con tipos de documento AS y CC |
-| `45547928` | CC/CE | Misma persona con tipos CC y CE |
+| *(cédula con duplicados)* | CC | Dos usuarios duplicados; se elige el mejor registro |
+| *(cédula sin email)* | CC | Email vacío en DB → se resuelve desde WinsisLab (histórico) |
+| *(misma persona, dos tipos)* | AS/CC | Misma persona con tipos de documento AS y CC |
+| *(misma persona, dos tipos)* | CC/CE | Misma persona con tipos CC y CE |
 
 ## Checklist de verificación
 
 ### Autenticación
 - [ ] Login admin → redirige a `/admin/pacientes`
-- [ ] Login paciente (`23008709`) → "Mis resultados" + dashboard con sus solicitudes
+- [ ] Login paciente (cuenta de prueba local) → "Mis resultados" + dashboard con sus solicitudes
 - [ ] Login empresa (`900701859-2`) → dashboard con solicitudes/pacientes/exámenes del cliente
 - [ ] 5 intentos fallidos → bloqueo "Intente nuevamente en 5 minutos"
 - [ ] `POST /request_reset_password` con email registrado → `debug_code` en dev
@@ -51,7 +53,7 @@
 
 ```powershell
 # Login y prueba de módulos (campos correctos: _username/_password)
-$body = @{_username='admin';_password='LcslResult2023$';_identification_type='CC'}
+$body = @{_username='admin';_password='<clave-local>';_identification_type='CC'}
 $null = Invoke-WebRequest "http://127.0.0.1:8090/login" -UseBasicParsing -SessionVariable s
 Invoke-WebRequest "http://127.0.0.1:8090/login_check" -Method Post -Body $body -UseBasicParsing -WebSession $s
 # login_check responde {"state":"111","message":"Bienvenido",...}

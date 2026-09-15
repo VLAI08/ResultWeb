@@ -34,8 +34,8 @@ class UsersService
 
     /**
      * Login con auto-registro (replica lab-results-api):
-     * 1) usuario existente por (identification, identificationtype) → valida activo y contraseña.
-     * 2) si no existe → determina tipo (empresa si el tipo de doc es COMPANY_KEY) y lo crea
+     * 1) usuario existente por (identification, identificationtype) �  valida activo y contraseña.
+     * 2) si no existe �  determina tipo (empresa si el tipo de doc es COMPANY_KEY) y lo crea
      *    a partir de WinsisLab (clientes/paciente), con contraseña = número de identificación.
      */
     public function login(string $username, string $password, string $identificationType = 'CC'): array
@@ -45,7 +45,7 @@ class UsersService
         $repo = $this->alphaEm()->getRepository(Users::class);
         $existing = $repo->findBy(['identification' => $username, 'identificationtype' => $identificationType]);
         if (!$existing) {
-            // Si el paciente cambió de tipo de documento (TI→CC, etc.), se busca solo por
+            // Si el paciente cambió de tipo de documento (TI� CC, etc.), se busca solo por
             // identificación para no crear un duplicado y conservar su historial.
             $existing = $repo->findBy(['identification' => $username]);
         }
@@ -114,7 +114,7 @@ class UsersService
 
     /**
      * Consulta (sin escribir) el correo del último ingreso en WinsisLab.
-     * paciente → public.paciente (person); clientes → public.clientes (company).
+     * paciente �  public.paciente (person); clientes �  public.clientes (company).
      */
     public function lastEmailFromWinsislab(string $identification, string $identificationType, ?string $type): string
     {
@@ -264,7 +264,7 @@ class UsersService
     /**
      * Devuelve el mejor usuario para iniciar sesión con una identificación:
      * busca por identificación (sin importar el tipo de documento, para cubrir
-     * cambios TI→CC, etc.); si hay duplicados se elige el activo con el nombre
+     * cambios TI� CC, etc.); si hay duplicados se elige el activo con el nombre
      * más completo. Devuelve null si no hay ninguno.
      */
     public function bestUserForLogin(string $identification, string $identificationType): ?array
@@ -500,7 +500,7 @@ class UsersService
         if (isset($map[$key])) {
             return $map[$key];
         }
-        // Para pacientes el correo se busca solo por identificación (cubre cambios de tipo TI→CC).
+        // Para pacientes el correo se busca solo por identificación (cubre cambios de tipo TI� CC).
         if ($user->getType() !== 'company') {
             $id = (string) ($user->getIdentification() ?? '');
             if (isset($map[$id])) {

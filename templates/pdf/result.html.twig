@@ -4,113 +4,84 @@
     <meta charset="utf-8">
     <title>Resultados</title>
     <style>
+        * { box-sizing: border-box; }
         html, body {
-            font-family: "verdana", "sans-serif";
-            font-size: 1em;
+            font-family: 'Figtree', 'Segoe UI', 'Inter', -apple-system, 'Helvetica Neue', Arial, sans-serif;
+            font-size: 12px;
+            color: #10222B;
+            margin: 0; padding: 0;
         }
-        .label {
-            color: #000033;
-            padding: 1px 3px;
-            font-size: 0.95em;
-            font-weight: 500;
-        }
-        .field {
-            color: #000033;
-            padding: 1px 3px;
-            font-weight: 600;
-            font-size: 0.75em;
-        }
-        td {
-            color: #000033;
-            padding: 0px 3px;
-        }
-        .seccion-title {
-            margin-top: 3px;
-            margin-bottom: 8px;
-            font-weight: 500;
-            font-size: 1.3rem;
-            color: #000033;
-        }
-        .analito {
-            width: 300px;
-            white-space: nowrap;
-            font-size: 0.80em;
-            padding: 1px 3px;
-        }
-        .result {
-            width: 100px;
-            white-space: nowrap;
-            font-size: 0.75em;
-            padding: 1px 3px;
-        }
-        .border-top-black { border-top: 1px solid black !important; }
-        .border-bottom-black { border-bottom: 1px solid black !important; }
-        .print {
-            widows: 12;
-            page-break-after: always;
-            page-break-inside: always;
-        }
-        .print:last-of-type { page-break-after: auto; }
-        .detail-result {
-            page-break-after: auto;
-            page-break-inside: always;
-        }
-        .content { position: relative; }
+        .content { position: relative; padding: 0 8px; }
         .header-logo {
-            position: fixed;
-            left: 0px; top: 0px; right: 0px;
-            height: 200px;
+            position: fixed; left: 0; top: 0; right: 0; height: 110px;
+            display: flex; align-items: center; justify-content: center;
+            background: #fff; border-bottom: 2px solid #CDE4EC; padding: 6px 12px;
         }
+        .header-logo img { max-width: 100%; max-height: 96px; object-fit: contain; }
         .footer-logo {
-            position: fixed;
-            left: 0px; bottom: -90px; right: 0px;
-            height: 200px;
+            position: fixed; left: 0; bottom: 0; right: 0; height: 90px;
+            display: flex; align-items: center; justify-content: center;
+            background: #fff; border-top: 2px solid #CDE4EC; padding: 4px 12px;
         }
-        .client-title {
-            font-weight: bold;
-            font-size: 1.1em;
-            height: 40px !important;
-        }
-        .signature {
-            position: fixed;
-            bottom: 100px;
-            right: -50px;
-        }
-        .barcode { margin-top: 6px; }
+        .footer-logo img { max-width: 100%; max-height: 80px; object-fit: contain; }
         .watermark {
-            position: fixed;
-            top: 50%;
-            left: 50%;
+            position: fixed; top: 50%; left: 50%;
             transform: translate(-50%, -50%) rotate(-45deg);
-            font-size: 120px;
-            color: rgba(0, 0, 0, 0.08);
-            font-weight: bold;
-            z-index: -1;
-            text-align: center;
-            width: 200%;
-            white-space: nowrap;
+            font-size: 90px; color: rgba(37, 99, 235, 0.06);
+            font-weight: 800; z-index: -1; text-align: center;
+            width: 200%; white-space: nowrap; letter-spacing: .05em;
         }
-        .line-botton {
-            font-weight: bold;
-            margin-top: 8px;
-            text-decoration: underline;
-            font-size: 0.7em;
+        .patient-box {
+            width: 100%; border-collapse: collapse; margin-top: 118px;
+            background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;
         }
-        .descriptive-section {
-            margin-bottom: 20px;
-            page-break-inside: avoid;
+        .patient-box td { padding: 5px 8px; border-bottom: 1px solid #eef2f7; vertical-align: top; }
+        .patient-box tr:last-child td { border-bottom: none; }
+        .patient-box .field { color: #64748b; font-size: 9px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; width: 90px; white-space: nowrap; }
+        .patient-box .label { color: #0f172a; font-weight: 600; }
+        .seccion-title {
+            margin: 14px 0 8px; font-weight: 700; font-size: 15px; color: #0B4F6C;
+            padding-bottom: 5px; border-bottom: 2px solid #CDE4EC; text-transform: uppercase; letter-spacing: .03em;
         }
-        .descriptive-title {
-            font-weight: bold;
-            font-size: 1.1em;
-            color: #000033;
-            margin-bottom: 10px;
+        .exam-block { margin-bottom: 14px; page-break-inside: avoid; }
+        .exam-name {
+            font-weight: 700; font-size: 12.5px; color: #0f172a; margin-bottom: 4px;
         }
-        .descriptive-text {
-            font-size: 0.9em;
-            color: #000033;
-            line-height: 1.5;
-            white-space: pre-line;
+        .exam-meta { font-size: 9.5px; color: #64748b; margin-bottom: 4px; }
+        .result-table { width: 100%; border-collapse: collapse; margin: 2px 0 6px; }
+        .result-table th {
+            background: #0f172a; color: #fff; font-size: 9.5px; font-weight: 600;
+            text-align: left; padding: 5px 8px; text-transform: uppercase; letter-spacing: .04em;
+        }
+        .result-table td { padding: 5px 8px; border-bottom: 1px solid #e2e8f0; font-size: 11px; vertical-align: top; }
+        .result-table tr:nth-child(even) td { background: #f8fafc; }
+        .analito { width: 34%; font-weight: 500; }
+        .result { width: 14%; font-weight: 700; color: #0f172a; }
+        .units, .min, .mid, .max { width: 12%; color: #475569; }
+        .descriptive-section { margin-bottom: 16px; page-break-inside: avoid; }
+        .descriptive-title { font-weight: 700; font-size: 13px; color: #0B4F6C; margin-bottom: 6px; }
+        .descriptive-text { font-size: 11.5px; color: #0f172a; line-height: 1.55; white-space: pre-line; padding: 8px; background: #f8fafc; border: 1px solid #eef2f7; border-radius: 6px; }
+        .signature {
+            margin-top: 26px; text-align: right; page-break-inside: avoid;
+        }
+        .signature img { max-width: 320px; max-height: 120px; object-fit: contain; }
+        .signature-line { border-top: 1px solid #94a3b8; width: 280px; margin-top: 4px; }
+        .signature-name { font-size: 11px; color: #334155; margin-top: 4px; }
+        .barcode { margin: 18px 0 4px; text-align: left; page-break-inside: avoid; }
+        .barcode img { max-width: 260px; }
+        .print { page-break-after: always; }
+        .print:last-of-type { page-break-after: auto; }
+        .detail-result { page-break-inside: avoid; }
+        .fechas { margin-top: 6px; font-size: 9.5px; color: #64748b; }
+        .fechas span { margin-right: 18px; }
+        .fechas .line-botton { font-weight: 600; color: #334155; }
+        .prevalidated-badge {
+            display: inline-block; margin: 8px 0; padding: 3px 12px; border-radius: 20px;
+            background: #fef3c7; color: #92400e; font-size: 10px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: .06em; border: 1px solid #fcd34d;
+        }
+        @media print {
+            .header-logo, .footer-logo { position: fixed; }
         }
     </style>
 </head>
@@ -121,33 +92,29 @@
 
     {% if detail.header is defined and detail.header %}
     <div class="header-logo">
-        <img src="{{ detail.header }}" style="width: 100%; height: 200px; object-fit: contain;" alt="">
+        <img src="{{ detail.header }}" alt="">
     </div>
     {% endif %}
 
     <div class="content">
-        <table style="width: 100%; margin-top: 205px;">
+        {% if detail.prevalidated is defined and detail.prevalidated %}
+        <span class="prevalidated-badge">Validado Preliminar</span>
+        {% endif %}
+
+        <table class="patient-box">
             <tr>
-                <td class="field">Nombre:</td>
-                <td class="label">{{ detail.patient_name }}</td>
-                <td class="field">Edad:</td>
-                <td class="label">{{ detail.age }} {{ detail.age_unit }}</td>
-                <td class="field">Sexo:</td>
-                <td class="label">{{ detail.sex }}</td>
+                <td class="field">Nombre</td><td class="label">{{ detail.patient_name }}</td>
+                <td class="field">Edad</td><td class="label">{{ detail.age }} {{ detail.age_unit }}</td>
+                <td class="field">Sexo</td><td class="label">{{ detail.sex }}</td>
             </tr>
             <tr>
-                <td class="field">Identificación:</td>
-                <td class="label">{{ detail.identification_type }} {{ detail.identification_number }}</td>
-                <td class="field">Solicitud:</td>
-                <td class="label">{{ detail.request_code }}</td>
-                <td class="field">Fecha:</td>
-                <td class="label">{{ detail.reception_date }}</td>
+                <td class="field">Identificación</td><td class="label">{{ detail.identification_type }} {{ detail.identification_number }}</td>
+                <td class="field">Solicitud</td><td class="label">{{ detail.request_code }}</td>
+                <td class="field">Fecha</td><td class="label">{{ detail.reception_date }}</td>
             </tr>
             <tr>
-                <td class="field">Empresa:</td>
-                <td class="label" colspan="3">{{ detail.client_name }}</td>
-                <td class="field">Teléfono:</td>
-                <td class="label">{{ detail.phone }}</td>
+                <td class="field">Empresa</td><td class="label" colspan="3">{{ detail.client_name }}</td>
+                <td class="field">Teléfono</td><td class="label">{{ detail.phone }}</td>
             </tr>
         </table>
 
@@ -164,36 +131,49 @@
         <div class="print">
             <div class="seccion-title">{{ section.name }}</div>
             {% for exam in section.exams %}
-            <div style="margin-bottom: 15px;" class="detail-result">
-                <b>{{ exam.exam_name }}</b>
+            <div class="exam-block">
+                <div class="exam-name">{{ exam.exam_name }}</div>
+                {% if exam.processing_date or exam.validation_date %}
+                <div class="exam-meta">
+                    {% if exam.processing_date is defined and exam.processing_date %}Procesado: {{ exam.processing_date }}{% if exam.processing_time is defined and exam.processing_time %} {{ exam.processing_time }}{% endif %}{% endif %}
+                    {% if exam.validation_date is defined and exam.validation_date %}{% if exam.processing_date %} &nbsp;|&nbsp; {% endif %}Validado: {{ exam.validation_date }}{% if exam.validation_time is defined and exam.validation_time %} {{ exam.validation_time }}{% endif %}{% endif %}
+                </div>
+                {% endif %}
                 {% for d in exam.details %}
-                <div>
+                <div class="detail-result">
                     {% if detail.prevalidated is defined and detail.prevalidated and d.ima_result is defined and d.ima_result %}<p>{{ d.ima_result }}</p>{% endif %}
-                    <table cellspacing="2" cellpadding="2">
-                        <tr>
-                            <td class="analito">{{ d.analito }}</td>
-                            <td class="result">{{ d.result }}</td>
-                            <td class="result">{{ d.units }}</td>
-                            <td class="result">{{ d.min }}</td>
-                            {% if d.mid is defined and d.mid %}<td class="result">{{ d.mid }}</td>{% endif %}
-                            <td class="result">{{ d.max }}</td>
-                        </tr>
+                    <table class="result-table">
+                        <thead>
+                            <tr>
+                                <th class="analito">Analito</th>
+                                <th class="result">Resultado</th>
+                                <th class="units">Unidades</th>
+                                <th class="min">Mín</th>
+                                {% if d.mid is defined and d.mid %}<th class="mid">Medio</th>{% endif %}
+                                <th class="max">Máx</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="analito">{{ d.analito }}</td>
+                                <td class="result">{{ d.result }}</td>
+                                <td class="units">{{ d.units }}</td>
+                                <td class="min">{{ d.min }}</td>
+                                {% if d.mid is defined and d.mid %}<td class="mid">{{ d.mid }}</td>{% endif %}
+                                <td class="max">{{ d.max }}</td>
+                            </tr>
+                        </tbody>
                     </table>
                 </div>
                 {% endfor %}
-                <div class="row">
-                    {% if exam.processing_date is defined and exam.processing_date %}
-                    <span class="line-botton">Fecha procesado: {{ exam.processing_date }}{% if exam.processing_time is defined and exam.processing_time %} {{ exam.processing_time }}{% endif %}</span>
-                    {% endif %}
-                    {% if exam.validation_date is defined and exam.validation_date %}
-                    <span class="line-botton" style="margin-left: 20px;">Fecha validado: {{ exam.validation_date }}{% if exam.validation_time is defined and exam.validation_time %} {{ exam.validation_time }}{% endif %}</span>
-                    {% endif %}
-                </div>
             </div>
             {% endfor %}
+            {% if section.signature is defined and section.signature %}
             <div class="signature">
-                <img src="{{ section.signature }}" style="width: 450px; height: 180px" alt="">
+                <img src="{{ section.signature }}" alt="">
+                <div class="signature-line"></div>
             </div>
+            {% endif %}
         </div>
         {% endfor %}
 
@@ -206,7 +186,7 @@
 
     {% if detail.footer is defined and detail.footer %}
     <div class="footer-logo">
-        <img src="{{ detail.footer }}" style="width: 100%; height: 200px; object-fit: contain;" alt="">
+        <img src="{{ detail.footer }}" alt="">
     </div>
     {% endif %}
 </body>

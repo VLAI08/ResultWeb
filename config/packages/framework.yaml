@@ -8,6 +8,9 @@ framework:
     assets: true
     session:
         handler_id: null
+        cookie_secure: auto
+        cookie_httponly: true
+        cookie_samesite: lax
     router:
         utf8: true
 

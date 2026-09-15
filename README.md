@@ -52,7 +52,7 @@ ALPHA_DATABASE_URL="mysql://usuario:password@host:3306/basededatos?charset=UTF8"
 BETA_DATABASE_URL="postgresql://usuario:password@host:5432/DBWINSISLAB?charset=UTF8"
 
 # FTP (opcional) para descargar PDFs ya publicados
-FTP_HOST=10.0.0.242
+FTP_HOST=ftp.ejemplo.com
 FTP_USER=usuario
 FTP_PASS=password
 FTP_PORT=21

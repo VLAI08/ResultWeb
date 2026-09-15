@@ -5,7 +5,7 @@ namespace App\Service;
 /**
  * Descarga de PDFs de resultados publicados desde el servidor FTP (WinsisLab).
  * Replica FtpService de lab-results-api: la URL del archivo (pe.archivo) es una
- * ruta UNC tipo "\\10.0.0.242\Upload\resultados\Solicitud_xxxx.pdf".
+ * ruta UNC tipo "\\<servidor-ftp>\Upload\resultados\Solicitud_xxxx.pdf".
  */
 class FtpService
 {

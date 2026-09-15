@@ -3,12 +3,12 @@
 {% block content %}
 <div class="page-head">
     <div>
-        <h1><i class="bi bi-people text-primary me-2"></i>Pacientes</h1>
+        <h1><span class="head-icon"><i class="bi bi-people"></i></span>Pacientes</h1>
         <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ path('root') }}">Panel</a></li><li class="breadcrumb-item active" aria-current="page">Pacientes</li></ol></nav>
     </div>
     <span class="stat-badge" id="patients-stat"><i class="bi bi-people"></i><span id="patients-count">Cargando...</span></span>
 </div>
-<div class="row g-3 mb-3">
+<div class="row g-3 mb-3 stagger">
     <div class="col-6 col-md-3">
         <div class="card"><div class="card-body py-3 stat-card">
             <div class="stat-icon blue"><i class="bi bi-people"></i></div>
@@ -37,8 +37,11 @@
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <span><i class="bi bi-people text-primary me-1"></i> Pacientes</span>
-        <div class="d-flex gap-2">
-            <input type="text" class="form-control form-control-sm" id="patients-search" placeholder="Buscar paciente..." style="width: 240px;">
+        <div class="d-flex gap-2 align-items-center">
+            <div class="input-group-icon" style="width: 230px;">
+                <i class="bi bi-search"></i>
+                <input type="text" class="form-control form-control-sm" id="patients-search" placeholder="Buscar paciente...">
+            </div>
             <select class="form-select form-select-sm" id="patients-state" style="width: auto;" title="Filtrar por estado">
                 <option value="">Todos</option>
                 <option value="1">Activos</option>
@@ -54,13 +57,11 @@
                 <thead class="v-heading">
                     <tr>
                         <th>#</th>
-                        <th>Tipo de identificación</th>
-                        <th>Identificación</th>
-                        <th>Nombres</th>
-                        <th>Apellidos</th>
-                        <th>Teléfono</th>
-                        <th>Correo electrónico</th>
-                        <th>Estado</th>
+                        <th class="th-sort" data-sort="identification">Identificación</th>
+                        <th class="th-sort" data-sort="names">Paciente</th>
+                        <th class="th-sort" data-sort="phones">Teléfono</th>
+                        <th class="th-sort" data-sort="email">Correo electrónico</th>
+                        <th class="th-sort" data-sort="active">Estado</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -109,8 +110,8 @@
                     <div class="col-md-6"><label class="form-label small">Apellidos</label><input class="form-control form-control-sm" name="lastnames" required></div>
                     <div class="col-md-6"><label class="form-label small">Correo electrónico</label><input type="email" class="form-control form-control-sm" name="email"></div>
                     <div class="col-md-6"><label class="form-label small">Dirección</label><input class="form-control form-control-sm" name="address"></div>
-                    <div class="col-md-6"><label class="form-label small">Contraseña</label><input type="password" class="form-control form-control-sm" name="password" id="patient-password" placeholder="Dejar en blanco para no cambiar"></div>
-                    <div class="col-md-6"><label class="form-label small">Confirmar contraseña</label><input type="password" class="form-control form-control-sm" name="password2" id="patient-password2"></div>
+                    <div class="col-md-6"><label class="form-label small">Contraseña</label><input type="password" class="form-control form-control-sm" name="password" id="patient-password" minlength="8" placeholder="Mínimo 8 caracteres; en blanco para no cambiar"></div>
+                    <div class="col-md-6"><label class="form-label small">Confirmar contraseña</label><input type="password" class="form-control form-control-sm" name="password2" id="patient-password2" minlength="8"></div>
                     <div class="col-md-6">
                         <label class="form-label small">Sexo</label>
                         <select class="form-select form-select-sm" name="sex">
@@ -140,10 +141,22 @@
 <script>
 (function () {
     var page = 1, limit = 10, totalPages = 1, lastItems = [], searchTimer = null;
+    var sortKey = null, sortDir = 1;
+
+    document.querySelectorAll('thead .th-sort').forEach(function (th) {
+        th.addEventListener('click', function () {
+            var key = this.dataset.sort;
+            if (sortKey === key) { sortDir = sortDir * -1; } else { sortKey = key; sortDir = 1; }
+            document.querySelectorAll('thead .th-sort').forEach(function (t) { t.classList.remove('asc', 'desc'); });
+            this.classList.add(sortDir === 1 ? 'asc' : 'desc');
+            page = 1;
+            load();
+        });
+    });
 
     function load() {
         var tbody = document.getElementById('patients-tbody');
-        window.skeletonRows(tbody, limit, 9);
+        window.skeletonRows(tbody, limit, 7);
         document.getElementById('patients-empty').classList.add('d-none');
         var q = new URLSearchParams({
             page: page, recordPerPage: limit, type: 'person',
@@ -154,6 +167,14 @@
         window.apiFetch('/api/users?' + q.toString())
             .then(function (res) {
                 var items = res.content || [];
+                if (sortKey) {
+                    items = items.slice().sort(function (a, b) {
+                        if (sortKey === 'active') { return ((b.active ? 1 : 0) - (a.active ? 1 : 0)) * sortDir; }
+                        var va = String(a[sortKey] || '').toLowerCase();
+                        var vb = String(b[sortKey] || '').toLowerCase();
+                        return va.localeCompare(vb, 'es') * sortDir;
+                    });
+                }
                 lastItems = items;
                 totalPages = Math.max(1, Math.ceil((res.totalRecord || 0) / limit));
                 document.getElementById('patients-count').textContent = (res.totalRecord || 0) + ' paciente(s)';
@@ -168,13 +189,12 @@
                 document.getElementById('patients-empty').classList.toggle('d-none', items.length > 0);
                 items.forEach(function (u, i) {
                     var tr = document.createElement('tr');
-                    tr.innerHTML = '<td>' + ((page - 1) * limit + i + 1) + '</td>' +
-                        '<td>' + window.esc(u.identificationtype || '') + '</td>' +
-                        '<td>' + window.esc(u.identification || '') + '</td>' +
-                        '<td class="fw-semibold">' + window.esc(u.names || '') + '</td>' +
-                        '<td>' + window.esc(u.lastnames || '') + '</td>' +
-                        '<td>' + window.esc(u.phones || '') + '</td>' +
-                        '<td>' + window.esc(u.email || '') + '</td>' +
+                    var initial = (u.names || '?').trim().charAt(0).toUpperCase();
+                    tr.innerHTML = '<td class="cell-num">' + ((page - 1) * limit + i + 1) + '</td>' +
+                        '<td><div class="d-flex align-items-center gap-2"><span class="doc-chip">' + window.esc(u.identificationtype || '—') + '</span><span class="mono" style="font-size:.82rem;">' + window.esc(u.identification || '') + '</span></div></td>' +
+                        '<td><div class="person-cell"><span class="person-avatar">' + window.esc(initial) + '</span><span><span class="pc-name">' + window.esc(u.names || '') + '</span><span class="pc-sub">' + window.esc(u.lastnames || '') + '</span></span></div></td>' +
+                        '<td class="mono" style="font-size:.8rem;">' + window.esc(u.phones || '—') + '</td>' +
+                        '<td class="small text-muted">' + window.esc(u.email || '—') + '</td>' +
                         '<td>' + (u.active ? '<span class="badge badge-soft-success">Activo</span>' : '<span class="badge badge-soft-secondary">Inactivo</span>') + '</td>' +
                         '<td class="text-end"><div class="dropdown">' +
                         '<button class="dropdown-actions" data-dd-toggle title="Acciones"><i class="bi bi-three-dots-vertical"></i></button>' +
@@ -308,6 +328,7 @@
         document.body.appendChild(a);
         a.click();
         setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 100);
+        window.showToast('Se exportaron ' + lastItems.length + ' registros (página actual con sus filtros)', 'success');
     });
 
     document.getElementById('patient-save').addEventListener('click', function () {
@@ -344,7 +365,8 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         })
-            .then(function () {
+            .then(function (res) {
+                if (res && res.success === false) { throw new Error(res.message || 'No se pudo guardar el paciente.'); }
                 bootstrap.Modal.getInstance(document.getElementById('patient-modal')).hide();
                 window.showToast(id ? 'Paciente actualizado correctamente' : 'Paciente creado correctamente', 'success');
                 load();

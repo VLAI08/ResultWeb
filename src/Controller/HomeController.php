@@ -27,7 +27,9 @@ class HomeController extends AbstractController
         // Simula la lógica legacy: requiere sesión 'user'
         $user = $this->session()->get('user');
         if (!$user) {
-            return $this->render('security/login.html.twig');
+            return $this->render('security/login.html.twig', [
+                'identification_types' => $this->domains->listDomainsActive('identificationtype'),
+            ]);
         }
         $identificationTypes = $this->domains->listDomainsActive('identificationtype');
         // Enrutar según tipo de usuario: admin va a su panel del sidebar; person/company usan la UI completa
@@ -48,7 +50,9 @@ class HomeController extends AbstractController
         // Compatibilidad: usamos 'user' en sesión y validamos que sea admin
         $user = $this->session()->get('user');
         if (!$user || ($user['type'] ?? '') !== 'admin') {
-            return $this->render('security/login.html.twig');
+            return $this->render('security/login.html.twig', [
+                'identification_types' => $this->domains->listDomainsActive('identificationtype'),
+            ]);
         }
         return $this->redirectToRoute('admin_patients');
     }

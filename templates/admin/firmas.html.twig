@@ -3,7 +3,7 @@
 {% block content %}
 <div class="page-head">
     <div>
-        <h1><i class="bi bi-clipboard-pulse text-primary me-2"></i>Firmas</h1>
+        <h1><span class="head-icon"><i class="bi bi-clipboard-pulse"></i></span>Firmas</h1>
         <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ path('root') }}">Panel</a></li><li class="breadcrumb-item active" aria-current="page">Firmas</li></ol></nav>
     </div>
     <span class="stat-badge" id="firms-stat"><i class="bi bi-clipboard-pulse"></i><span id="firms-count">Cargando...</span></span>
@@ -90,7 +90,7 @@
                 document.getElementById('firms-empty').classList.toggle('d-none', items.length > 0);
                 items.forEach(function (f, i) {
                     var tr = document.createElement('tr');
-                    tr.innerHTML = '<td>' + ((page - 1) * limit + i + 1) + '</td>' +
+                    tr.innerHTML = '<td class="cell-num">' + ((page - 1) * limit + i + 1) + '</td>' +
                         '<td class="fw-semibold">' + window.esc(f.code || '') + '</td>' +
                         '<td class="text-truncate" style="max-width: 320px;" title="' + window.esc(f.url || '') + '">' + window.esc(f.url || '') + '</td>' +
                         '<td>' + (f.active ? '<span class="badge badge-soft-success">Activo</span>' : '<span class="badge badge-soft-secondary">Inactivo</span>') + '</td>' +

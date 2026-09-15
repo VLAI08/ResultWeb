@@ -3,7 +3,7 @@
 {% block content %}
 <div class="page-head">
     <div>
-        <h1><i class="bi bi-gear text-primary me-2"></i>Configuración</h1>
+        <h1><span class="head-icon"><i class="bi bi-gear"></i></span>Configuración</h1>
         <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ path('root') }}">Panel</a></li><li class="breadcrumb-item active" aria-current="page">Configuración</li></ol></nav>
     </div>
     <span class="stat-badge" id="domains-stat"><i class="bi bi-gear"></i><span id="domains-count">Cargando...</span></span>
@@ -103,7 +103,7 @@
                 document.getElementById('domains-empty').classList.toggle('d-none', items.length > 0);
                 items.forEach(function (d, i) {
                     var tr = document.createElement('tr');
-                    tr.innerHTML = '<td>' + ((page - 1) * limit + i + 1) + '</td>' +
+                    tr.innerHTML = '<td class="cell-num">' + ((page - 1) * limit + i + 1) + '</td>' +
                         '<td class="fw-semibold">' + window.esc(d.name || '') + '</td>' +
                         '<td>' + window.esc(d.titulo || '') + '</td>' +
                         '<td>' + window.esc(d.valor || '') + '</td>' +

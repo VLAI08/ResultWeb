@@ -99,7 +99,7 @@ Todas devuelven `401 {"message":"No autorizado"}` sin sesión válida.
 ```bash
 # Login
 curl -c cookies.txt -X POST http://127.0.0.1:8090/login_check \
-  -d "_username=23008709&_password=23008709&_identification_type=CC"
+  -d "_username=1012345678&_password=miclavedemo&_identification_type=CC"
 
 # Listar pacientes (admin)
 curl -b cookies.txt "http://127.0.0.1:8090/api/users?type=person&active=1&limit=10"

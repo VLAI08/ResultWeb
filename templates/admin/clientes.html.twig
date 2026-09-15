@@ -3,7 +3,7 @@
 {% block content %}
 <div class="page-head">
     <div>
-        <h1><i class="bi bi-hospital text-primary me-2"></i>Clientes</h1>
+        <h1><span class="head-icon"><i class="bi bi-hospital"></i></span>Clientes</h1>
         <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ path('root') }}">Panel</a></li><li class="breadcrumb-item active" aria-current="page">Clientes</li></ol></nav>
     </div>
     <span class="stat-badge" id="clients-stat"><i class="bi bi-hospital"></i><span id="clients-count">Cargando...</span></span>
@@ -133,12 +133,12 @@
                 document.getElementById('clients-empty').classList.toggle('d-none', items.length > 0);
                 items.forEach(function (u, i) {
                     var tr = document.createElement('tr');
-                    tr.innerHTML = '<td>' + ((page - 1) * limit + i + 1) + '</td>' +
-                        '<td>' + window.esc(u.code || '') + '</td>' +
-                        '<td>' + window.esc(u.identification || '') + '</td>' +
+                    tr.innerHTML = '<td class="cell-num">' + ((page - 1) * limit + i + 1) + '</td>' +
+                        '<td class="mono" style="font-size:.82rem;">' + window.esc(u.code || '') + '</td>' +
+                        '<td class="mono" style="font-size:.82rem;">' + window.esc(u.identification || '') + '</td>' +
                         '<td class="fw-semibold">' + window.esc(u.names || '') + '</td>' +
-                        '<td>' + window.esc(u.phones || '') + '</td>' +
-                        '<td>' + window.esc(u.email || '') + '</td>' +
+                        '<td class="mono" style="font-size:.8rem;">' + window.esc(u.phones || '—') + '</td>' +
+                        '<td class="small text-muted">' + window.esc(u.email || '—') + '</td>' +
                         '<td>' + (u.active ? '<span class="badge badge-soft-success">Activo</span>' : '<span class="badge badge-soft-secondary">Inactivo</span>') + '</td>' +
                         '<td class="text-end"><div class="dropdown">' +
                         '<button class="dropdown-actions" data-dd-toggle title="Acciones"><i class="bi bi-three-dots-vertical"></i></button>' +
@@ -214,7 +214,8 @@
         var saveBtn = document.getElementById('client-save');
         window.setLoading(saveBtn, true, 'Guardando...');
         window.apiFetch('/api/clients/' + (id || ''), { method: id ? 'PATCH' : 'POST', body: fd, silent: true })
-            .then(function () {
+            .then(function (res) {
+                if (res && res.success === false) { throw new Error(res.message || 'No se pudo guardar el cliente.'); }
                 bootstrap.Modal.getInstance(document.getElementById('client-modal')).hide();
                 window.showToast(id ? 'Cliente actualizado correctamente' : 'Cliente creado correctamente', 'success');
                 load();

@@ -19,3 +19,8 @@
 /public/lib/
 /public/.well-known/
 ###< Datos del entorno de trabajo ###
+
+/.env
+/public/static/upload/
+
+/.env

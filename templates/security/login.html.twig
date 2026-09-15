@@ -1,56 +1,113 @@
 {% extends 'modern/base.html.twig' %}
 {% block title %}Ingreso - Resultados en Línea{% endblock %}
 {% block body_only %}
-<div class="login-bg">
-    <div class="login-card card shadow">
-        <div class="card-body p-4">
-            <div class="text-center mb-4">
-                <img src="{{ asset('static/images/logo_sta.png') }}" alt="Logo" style="max-height: 64px;" onerror="this.style.display='none'">
-                <h1 class="h4 mt-3 mb-0">Resultados en Línea</h1>
-                <p class="text-muted small">Laboratorio SantaLucia</p>
-            </div>
+<div class="auth-shell">
+    <!-- Panel de marca (desktop) -->
+    <aside class="auth-brand">
+        <img src="{{ asset('static/images/logo_sta.png') }}" alt="Laboratorio SantaLucia" class="ab-logo">
+        <svg class="ab-ecg" viewBox="0 0 600 100" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M0,50 H90 L105,50 L115,18 L132,82 L146,40 L158,50 H250 L265,50 L275,12 L295,88 L310,50 H400 L415,50 L425,22 L440,72 L455,50 H600"
+                  fill="none" stroke="rgba(15,163,177,.25)" stroke-width="1.5"/>
+            <path class="ecg-line" d="M0,50 H90 L105,50 L115,18 L132,82 L146,40 L158,50 H250 L265,50 L275,12 L295,88 L310,50 H400 L415,50 L425,22 L440,72 L455,50 H600"
+                  fill="none" stroke="#0FA3B1" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <h1 class="ab-title">Tus resultados,<br><span>al alcance de un clic.</span></h1>
+        <p class="ab-sub">Portal de resultados de Laboratorio Clínico SantaLucia — consulta y descarga tus exámenes de forma segura, estés donde estés.</p>
+        <div class="ab-bullets">
+            <div class="ab-bullet"><i class="bi bi-shield-check"></i><span>Conexión cifrada y confidencialidad garantizada de tu información médica</span></div>
+            <div class="ab-bullet"><i class="bi bi-clock-history"></i><span>Disponible 24/7 desde cualquier dispositivo</span></div>
+            <div class="ab-bullet"><i class="bi bi-file-earmark-pdf"></i><span>Descarga tus resultados en PDF con firma y validez oficial</span></div>
+        </div>
+        <div class="ab-contact">
+            <span><i class="bi bi-telephone me-1"></i>(601) 743 1226</span>
+            <span><i class="bi bi-geo-alt me-1"></i>labsantalucia.com.co</span>
+        </div>
+    </aside>
 
-            <div class="alert alert-danger d-none" id="loginAlert"></div>
+    <!-- Panel del formulario -->
+    <main class="auth-panel">
+        <div class="auth-topbar w-100">
+            <img src="{{ asset('static/images/logo_sta.png') }}" alt="SantaLucia">
+            <span>Resultados en Línea</span>
+        </div>
+        <div class="auth-card">
+            <div id="login-step">
+                <div class="text-center mb-4">
+                    <div class="auth-logo"><img src="{{ asset('static/images/logo_sta.png') }}" alt="SantaLucia"></div>
+                    <h1 class="h4 auth-title mt-3 mb-1">Bienvenido</h1>
+                    <p class="auth-sub mb-0">Accede a tus resultados de laboratorio</p>
+                </div>
 
-            <form id="login-form" method="post" action="{{ path('security_login_check') }}">
-                <div class="mb-3">
-                    <label for="_identification_type" class="form-label">Tipo de documento</label>
-                    <select class="form-select" id="_identification_type" name="_identification_type" required>
-                        {% if identification_types is defined and identification_types %}
-                            {% for t in identification_types %}
-                            <option value="{{ t.valor }}" {% if t.valor == 'CC' %}selected{% endif %}>{{ t.titulo }} ({{ t.valor }})</option>
-                            {% endfor %}
-                        {% else %}
-                            <option value="CC" selected>CC - Cédula de Ciudadanía</option>
-                            <option value="CE">CE - Cédula de Extranjería</option>
-                            <option value="TI">TI - Tarjeta de Identidad</option>
-                            <option value="PA">PA - Pasaporte</option>
-                            <option value="NI">NI - Nit (Empresa)</option>
-                        {% endif %}
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label for="_username" class="form-label">Número de identificación</label>
-                    <input type="text" class="form-control" id="_username" name="_username" placeholder="Ej: 1012345678" required autofocus>
-                </div>
-                <div class="mb-3">
-                    <label for="_password" class="form-label">Contraseña</label>
-                    <input type="password" class="form-control" id="_password" name="_password" placeholder="Contraseña" required>
-                    <div class="form-text">
-                        <b>NOTA:</b> Su contraseña por defecto es su número de identificación. Recuerde que usted debe
-                        cambiar su contraseña para GARANTIZAR la confidencialidad de los resultados de laboratorio.
+                <div class="alert alert-danger d-none mb-3" id="loginAlert" role="alert"></div>
+
+                <form id="login-form" method="post" action="{{ path('security_login_check') }}" autocomplete="off" novalidate>
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                    <div class="mb-3">
+                    <label for="_identification_type" class="form-label small">Tipo de documento</label>
+                    <div class="input-group-icon">
+                        <i class="bi bi-card-text"></i>
+                        <select class="form-select" id="_identification_type" name="_identification_type" required>
+                            {% if identification_types is defined and identification_types %}
+                                {% for t in identification_types %}
+                                <option value="{{ t.valor }}" {% if t.valor == 'CC' %}selected{% endif %}>{{ t.titulo }} ({{ t.valor }})</option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="CC" selected>CC - Cédula de Ciudadanía</option>
+                                <option value="CE">CE - Cédula de Extranjería</option>
+                                <option value="TI">TI - Tarjeta de Identidad</option>
+                                <option value="PA">PA - Pasaporte</option>
+                                <option value="NI">NI - Nit (Empresa)</option>
+                            {% endif %}
+                        </select>
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary w-100" id="login-submit">
-                    <i class="bi bi-box-arrow-in-right"></i> Ingresar
+                <div class="mb-3">
+                    <label for="_username" class="form-label small">Número de identificación</label>
+                    <div class="input-group-icon">
+                        <i class="bi bi-person"></i>
+                        <input type="text" class="form-control" id="_username" name="_username" placeholder="Ej: 1012345678" required autofocus>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label for="_password" class="form-label small">Contraseña</label>
+                    <div class="input-group-icon">
+                        <i class="bi bi-lock"></i>
+                        <input type="password" class="form-control" id="_password" name="_password" placeholder="Ingresa tu contraseña" required>
+                        <button type="button" class="btn btn-link position-absolute end-0 top-50 translate-middle-y text-muted border-0 bg-transparent" id="toggle-pass" tabindex="-1" title="Mostrar contraseña" style="z-index:6; font-size: 1.05rem;"><i class="bi bi-eye"></i></button>
+                    </div>
+                    <div class="form-text mt-2 small text-muted">
+                        <i class="bi bi-shield-check me-1"></i>Su contraseña por defecto es su número de identificación. Cámbiela al ingresar para garantizar la confidencialidad de sus resultados.
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 py-2" id="login-submit">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Ingresar
                 </button>
             </form>
 
-            <div class="text-center mt-3">
-                <a href="{{ path('reset_password_page') }}" class="small">¿Olvidó su contraseña?</a>
+            <div class="text-center mt-4">
+                <a href="{{ path('reset_password_page') }}" class="small text-decoration-none"><i class="bi bi-key me-1"></i>¿Olvidó su contraseña?</a>
+            </div>
+            </div>
+
+            <!-- Paso 2: verificación en dos pasos (administradores) -->
+            <div id="twofa-step" class="d-none">
+                <div class="text-center mb-4">
+                    <div class="auth-logo auth-logo-icon"><i class="bi bi-shield-lock"></i></div>
+                    <h2 class="h5 auth-title mt-3 mb-1">Verificación en dos pasos</h2>
+                    <p class="auth-sub mb-0">Enviamos un código a <strong id="twofa-hint">su correo</strong>. Ingréselo para continuar.</p>
+                </div>
+                <div class="alert alert-danger d-none mb-3" id="twofaAlert" role="alert"></div>
+                <div class="mb-3">
+                    <label for="twofa-code" class="form-label small">Código de verificación</label>
+                    <div class="input-group-icon">
+                        <i class="bi bi-shield-check"></i>
+                        <input type="text" class="form-control mono" id="twofa-code" maxlength="6" placeholder="6 dígitos" style="letter-spacing:.4em;" autocomplete="one-time-code">
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primary w-100 py-2" id="twofa-verify"><i class="bi bi-shield-check me-1"></i>Verificar y entrar</button>
             </div>
         </div>
-    </div>
+    </main>
 </div>
 {% endblock %}
 {% block scripts %}
@@ -62,26 +119,78 @@
         alertBox.textContent = msg;
         alertBox.classList.remove('d-none');
     }
+    var passInput = document.getElementById('_password');
+    var togglePass = document.getElementById('toggle-pass');
+    if (togglePass && passInput) {
+        togglePass.addEventListener('click', function () {
+            var isPass = passInput.type === 'password';
+            passInput.type = isPass ? 'text' : 'password';
+            togglePass.innerHTML = isPass ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+        });
+    }
     loginForm.addEventListener('submit', function (e) {
         e.preventDefault();
         var btn = document.getElementById('login-submit');
         btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Ingresando...';
         var data = new URLSearchParams(new FormData(loginForm));
         fetch(loginForm.action, { method: 'POST', body: data })
             .then(function (r) { return r.json(); })
             .then(function (res) {
                 if (res.state === '111') {
                     window.location.href = '{{ path('root') }}';
+                } else if (res.state === '1112') {
+                    document.getElementById('login-step').classList.add('d-none');
+                    var step = document.getElementById('twofa-step');
+                    step.classList.remove('d-none');
+                    document.getElementById('twofa-hint').textContent = res.email_hint || 'su correo';
+                    setTimeout(function () { document.getElementById('twofa-code').focus(); }, 200);
                 } else {
                     showError(res.message || 'Usuario o contraseña incorrectos');
                     btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-box-arrow-in-right me-1"></i> Ingresar';
                 }
             })
             .catch(function () {
                 showError('No se pudo conectar con el servidor. Intente nuevamente.');
                 btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-box-arrow-in-right me-1"></i> Ingresar';
             });
     });
+
+    // Verificación 2FA de administradores
+    var twofaAlert = document.getElementById('twofaAlert');
+    var verifyBtn = document.getElementById('twofa-verify');
+    function show2faError(msg) { twofaAlert.textContent = msg; twofaAlert.classList.remove('d-none'); }
+    if (verifyBtn) {
+        verifyBtn.addEventListener('click', function () {
+            var code = document.getElementById('twofa-code').value.trim();
+            twofaAlert.classList.add('d-none');
+            if (code.length < 6) { show2faError('Ingrese el código de 6 dígitos.'); return; }
+            verifyBtn.disabled = true;
+            verifyBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verificando...';
+            fetch('{{ path('security_verify_2fa') }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ code: code })
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (res) {
+                    if (res.state === '111') {
+                        window.location.href = '{{ path('root') }}';
+                    } else {
+                        show2faError(res.message || 'Código incorrecto');
+                        verifyBtn.disabled = false;
+                        verifyBtn.innerHTML = '<i class="bi bi-shield-check me-1"></i>Verificar y entrar';
+                    }
+                })
+                .catch(function () {
+                    show2faError('No se pudo conectar con el servidor. Intente nuevamente.');
+                    verifyBtn.disabled = false;
+                    verifyBtn.innerHTML = '<i class="bi bi-shield-check me-1"></i>Verificar y entrar';
+                });
+        });
+    }
 })();
 </script>
 {% endblock %}
