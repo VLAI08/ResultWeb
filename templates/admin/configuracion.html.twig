@@ -24,7 +24,7 @@
     </div>
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table class="table table-hover align-middle mob-cards">
                 <thead class="v-heading">
                     <tr><th>#</th><th>Nombre</th><th>Título</th><th>Valor</th><th>Estado</th><th></th></tr>
                 </thead>
@@ -104,11 +104,11 @@
                 items.forEach(function (d, i) {
                     var tr = document.createElement('tr');
                     tr.innerHTML = '<td class="cell-num">' + ((page - 1) * limit + i + 1) + '</td>' +
-                        '<td class="fw-semibold">' + window.esc(d.name || '') + '</td>' +
-                        '<td>' + window.esc(d.titulo || '') + '</td>' +
-                        '<td>' + window.esc(d.valor || '') + '</td>' +
-                        '<td>' + (d.active ? '<span class="badge badge-soft-success">Activo</span>' : '<span class="badge badge-soft-secondary">Inactivo</span>') + '</td>' +
-                        '<td class="text-end"><button class="btn btn-sm btn-outline-primary action-icon" data-edit="' + d.id + '" title="Editar"><i class="bi bi-pencil"></i></button></td>';
+                        '<td data-label="Nombre" class="fw-semibold">' + window.esc(d.name || '') + '</td>' +
+                        '<td data-label="Título">' + window.esc(d.titulo || '') + '</td>' +
+                        '<td data-label="Valor">' + window.esc(d.valor || '') + '</td>' +
+                        '<td data-label="Estado">' + (d.active ? '<span class="badge badge-soft-success">Activo</span>' : '<span class="badge badge-soft-secondary">Inactivo</span>') + '</td>' +
+                        '<td data-label="" class="text-end"><button class="btn btn-sm btn-outline-primary action-icon" data-edit="' + d.id + '" title="Editar"><i class="bi bi-pencil"></i></button></td>';
                     tbody.appendChild(tr);
                 });
                 renderPagination();

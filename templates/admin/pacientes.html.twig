@@ -53,7 +53,7 @@
     </div>
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table class="table table-hover align-middle mob-cards">
                 <thead class="v-heading">
                     <tr>
                         <th>#</th>
@@ -196,12 +196,12 @@
                     tr.dataset.dupKey = dupKey;
                     tr.dataset.rowIndex = i;
                     tr.innerHTML = '<td class="cell-num">' + ((page - 1) * limit + i + 1) + '</td>' +
-                        '<td><div class="d-flex align-items-center gap-2"><span class="doc-chip">' + window.esc(u.identificationtype || '—') + '</span><span class="mono" style="font-size:.82rem;">' + window.esc(u.identification || '') + '</span></div></td>' +
-                        '<td><div class="person-cell"><span class="person-avatar">' + window.esc(initial) + '</span><span><span class="pc-name">' + window.esc(u.names || '') + '</span><span class="pc-sub">' + window.esc(u.lastnames || '') + '</span></span></div></td>' +
-                        '<td class="mono" style="font-size:.8rem;">' + window.esc(u.phones || '—') + '</td>' +
-                        '<td class="small text-muted">' + window.esc(u.email || '—') + '</td>' +
-                        '<td>' + (u.active ? '<span class="badge badge-soft-success">Activo</span>' : '<span class="badge badge-soft-secondary">Inactivo</span>') + '</td>' +
-                        '<td class="text-end"><div class="dropdown">' +
+                        '<td data-label="Identificación"><div class="d-flex align-items-center gap-2"><span class="doc-chip">' + window.esc(u.identificationtype || '—') + '</span><span class="mono" style="font-size:.82rem;">' + window.esc(u.identification || '') + '</span></div></td>' +
+                        '<td data-label="Paciente"><div class="person-cell"><span class="person-avatar">' + window.esc(initial) + '</span><span><span class="pc-name">' + window.esc(u.names || '') + '</span><span class="pc-sub">' + window.esc(u.lastnames || '') + '</span></span></div></td>' +
+                        '<td data-label="Teléfono" class="mono" style="font-size:.8rem;">' + window.esc(u.phones || '—') + '</td>' +
+                        '<td data-label="Correo electrónico" class="small text-muted">' + window.esc(u.email || '—') + '</td>' +
+                        '<td data-label="Estado">' + (u.active ? '<span class="badge badge-soft-success">Activo</span>' : '<span class="badge badge-soft-secondary">Inactivo</span>') + '</td>' +
+                        '<td data-label="" class="text-end"><div class="dropdown">' +
                         '<button class="dropdown-actions" data-dd-toggle title="Acciones"><i class="bi bi-three-dots-vertical"></i></button>' +
                         '<ul class="dropdown-menu dropdown-menu-end" data-dd-menu>' +
                         '<li><a class="dropdown-item" href="#" data-edit="' + u.id + '"><i class="bi bi-pencil"></i> Editar</a></li>' +

@@ -54,7 +54,7 @@
     <div class="card-header"><i class="bi bi-person-lines-fill text-primary me-1"></i> Pacientes y solicitudes</div>
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table class="table table-hover align-middle mob-cards">
                 <thead class="v-heading">
                     <tr>
                         <th>#</th>
@@ -90,7 +90,7 @@
                     </div>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
+                    <table class="table table-hover align-middle mob-cards">
                         <thead class="v-heading">
                             <tr><th>#</th><th>Solicitud</th><th>Fecha recepción</th><th>Exámenes</th><th>Estado</th><th></th></tr>
                         </thead>
@@ -222,10 +222,10 @@
                 (res.items || []).forEach(function (p, i) {
                     var tr = document.createElement('tr');
                     tr.innerHTML = '<td class="cell-num">' + (i + 1) + '</td>' +
-                        '<td class="mono" style="font-size:.85rem;">' + window.esc(p.identification_number) + '</td>' +
-                        '<td class="fw-semibold">' + window.esc(p.full_name) + '</td>' +
-                        '<td class="mono" style="font-size:.8rem;">' + window.esc(p.phone || '—') + '</td>' +
-                        '<td class="small text-muted">' + window.esc(p.address || '—') + '</td>' +
+                        '<td data-label="Identificación" class="mono" style="font-size:.85rem;">' + window.esc(p.identification_number) + '</td>' +
+                        '<td data-label="Paciente" class="fw-semibold">' + window.esc(p.full_name) + '</td>' +
+                        '<td data-label="Teléfono" class="mono" style="font-size:.8rem;">' + window.esc(p.phone || '—') + '</td>' +
+                        '<td data-label="Dirección" class="small text-muted">' + window.esc(p.address || '—') + '</td>' +
                         '<td><button class="btn btn-sm btn-outline-primary" data-exams="' + window.esc(p.identification_number) + '|' + window.esc(p.identification_type) + '|' + window.esc(p.full_name) + '"><i class="bi bi-journal-text"></i> Ver solicitudes</button></td>' +
                         '<td></td>';
                     tr.querySelector('[data-exams]').addEventListener('click', function () {
@@ -259,10 +259,10 @@
                 items.forEach(function (r, i) {
                     var tr = document.createElement('tr');
                     tr.innerHTML = '<td>' + (i + 1) + '</td>' +
-                        '<td class="fw-semibold mono">' + window.esc(r.request_code) + '</td>' +
-                        '<td>' + window.esc(r.reception_date) + '</td>' +
-                        '<td>' + window.esc(r.exams) + '</td>' +
-                        '<td>' + (r.prevalidated ? '<span class="badge badge-soft-warning">Validado Preliminar</span>' : '<span class="badge badge-soft-success">Validado</span>') + '</td>' +
+                        '<td data-label="Solicitud" class="fw-semibold mono">' + window.esc(r.request_code) + '</td>' +
+                        '<td data-label="Fecha recepción">' + window.esc(r.reception_date) + '</td>' +
+                        '<td data-label="Exámenes">' + window.esc(r.exams) + '</td>' +
+                        '<td data-label="Estado">' + (r.prevalidated ? '<span class="badge badge-soft-warning">Validado Preliminar</span>' : '<span class="badge badge-soft-success">Validado</span>') + '</td>' +
                         '<td class="text-end"><a href="#" class="text-success action-icon" data-download="' + window.esc(r.request_code) + '" data-prevalidated="' + (r.prevalidated ? '1' : '0') + '" data-url="' + window.esc(r.url || 'no') + '" title="Descargar PDF"><i class="bi bi-download"></i></a></td>';
                     tr.querySelector('[data-download]').addEventListener('click', function (ev) {
                         ev.preventDefault();

@@ -86,7 +86,7 @@
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle" id="mine-table">
+                    <table class="table table-hover align-middle mob-cards" id="mine-table">
                         <thead class="v-heading">
                             <tr><th>Solicitud</th><th>Fecha recepción</th><th>Exámenes</th><th>Empresa</th><th>Estado</th><th></th></tr>
                         </thead>
@@ -130,7 +130,7 @@
         <div class="card">
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle" id="search-table">
+                    <table class="table table-hover align-middle mob-cards" id="search-table">
                         <thead class="v-heading">
                             <tr><th>Identificación</th><th>Nombre</th><th>Teléfono</th><th>Dirección</th><th></th></tr>
                         </thead>
@@ -290,11 +290,11 @@
         document.getElementById('mine-empty').classList.toggle('d-none', items.length > 0);
         items.forEach(function (r) {
             var tr = document.createElement('tr');
-            tr.innerHTML = '<td class="fw-semibold mono">' + window.esc(r.request_code) + '</td>' +
-                '<td>' + window.esc(r.reception_date) + '</td>' +
-                '<td>' + window.esc(r.exams) + '</td>' +
-                '<td>' + window.esc(r.client_code) + '</td>' +
-                '<td>' + (r.prevalidated ? '<span class="badge badge-soft-warning">Validado Preliminar</span>' : '<span class="badge badge-soft-success">Validado</span>') + '</td>' +
+            tr.innerHTML = '<td data-label="Solicitud" class="fw-semibold mono">' + window.esc(r.request_code) + '</td>' +
+                '<td data-label="Fecha recepción">' + window.esc(r.reception_date) + '</td>' +
+                '<td data-label="Exámenes">' + window.esc(r.exams) + '</td>' +
+                '<td data-label="Empresa">' + window.esc(r.client_code) + '</td>' +
+                '<td data-label="Estado">' + (r.prevalidated ? '<span class="badge badge-soft-warning">Validado Preliminar</span>' : '<span class="badge badge-soft-success">Validado</span>') + '</td>' +
                 '<td class="text-end"><button class="btn btn-sm btn-outline-primary" title="Ver detalle del resultado" data-code="' + window.esc(r.request_code) + '" data-prevalidated="' + (r.prevalidated ? '1' : '0') + '" data-url="' + window.esc(r.url || 'no') + '"><i class="bi bi-eye"></i> Ver</button>' +
                 '<button class="btn btn-sm btn-outline-success ms-1" title="Descargar PDF" data-pdf="' + window.esc(r.request_code) + '" data-prevalidated="' + (r.prevalidated ? '1' : '0') + '" data-url="' + window.esc(r.url || 'no') + '"><i class="bi bi-download"></i> PDF</button></td>';
             tbody.appendChild(tr);
@@ -342,10 +342,10 @@
                     if (res.error) { window.showToast(res.error, 'warning'); }
                     (res.items || []).forEach(function (p) {
                         var tr = document.createElement('tr');
-                        tr.innerHTML = '<td>' + window.esc(p.identification_number) + '</td>' +
-                            '<td class="fw-semibold">' + window.esc(p.full_name) + '</td>' +
-                            '<td>' + window.esc(p.phone) + '</td>' +
-                            '<td>' + window.esc(p.address) + '</td>' +
+                        tr.innerHTML = '<td data-label="Identificación">' + window.esc(p.identification_number) + '</td>' +
+                            '<td data-label="Paciente" class="fw-semibold">' + window.esc(p.full_name) + '</td>' +
+                            '<td data-label="Teléfono">' + window.esc(p.phone) + '</td>' +
+                            '<td data-label="Dirección">' + window.esc(p.address) + '</td>' +
                             '<td class="text-end"><button class="btn btn-sm btn-outline-primary" data-search="' + window.esc(p.identification_number) + '|' + window.esc(p.identification_type) + '"><i class="bi bi-search"></i> Ver solicitudes</button></td>';
                         tr.querySelector('button').addEventListener('click', function () {
                             var parts = this.dataset.search.split('|');

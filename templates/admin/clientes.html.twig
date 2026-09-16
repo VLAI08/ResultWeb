@@ -24,7 +24,7 @@
     </div>
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table class="table table-hover align-middle mob-cards">
                 <thead class="v-heading">
                     <tr>
                         <th>#</th>
@@ -134,13 +134,13 @@
                 items.forEach(function (u, i) {
                     var tr = document.createElement('tr');
                     tr.innerHTML = '<td class="cell-num">' + ((page - 1) * limit + i + 1) + '</td>' +
-                        '<td class="mono" style="font-size:.82rem;">' + window.esc(u.code || '') + '</td>' +
-                        '<td class="mono" style="font-size:.82rem;">' + window.esc(u.identification || '') + '</td>' +
-                        '<td class="fw-semibold">' + window.esc(u.names || '') + '</td>' +
-                        '<td class="mono" style="font-size:.8rem;">' + window.esc(u.phones || '—') + '</td>' +
-                        '<td class="small text-muted">' + window.esc(u.email || '—') + '</td>' +
-                        '<td>' + (u.active ? '<span class="badge badge-soft-success">Activo</span>' : '<span class="badge badge-soft-secondary">Inactivo</span>') + '</td>' +
-                        '<td class="text-end"><div class="dropdown">' +
+                        '<td data-label="Código" class="mono" style="font-size:.82rem;">' + window.esc(u.code || '') + '</td>' +
+                        '<td data-label="Identificación" class="mono" style="font-size:.82rem;">' + window.esc(u.identification || '') + '</td>' +
+                        '<td data-label="Cliente" class="fw-semibold">' + window.esc(u.names || '') + '</td>' +
+                        '<td data-label="Teléfono" class="mono" style="font-size:.8rem;">' + window.esc(u.phones || '—') + '</td>' +
+                        '<td data-label="Correo electrónico" class="small text-muted">' + window.esc(u.email || '—') + '</td>' +
+                        '<td data-label="Estado">' + (u.active ? '<span class="badge badge-soft-success">Activo</span>' : '<span class="badge badge-soft-secondary">Inactivo</span>') + '</td>' +
+                        '<td data-label="" class="text-end"><div class="dropdown">' +
                         '<button class="dropdown-actions" data-dd-toggle title="Acciones"><i class="bi bi-three-dots-vertical"></i></button>' +
                         '<ul class="dropdown-menu dropdown-menu-end" data-dd-menu>' +
                         '<li><a class="dropdown-item" href="#" data-edit="' + u.id + '"><i class="bi bi-pencil"></i> Editar</a></li>' +

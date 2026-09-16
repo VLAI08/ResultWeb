@@ -18,7 +18,7 @@
     </div>
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table class="table table-hover align-middle mob-cards">
                 <thead class="v-heading">
                     <tr><th>#</th><th>Código</th><th>Url</th><th>Estado</th><th></th></tr>
                 </thead>
@@ -91,10 +91,10 @@
                 items.forEach(function (f, i) {
                     var tr = document.createElement('tr');
                     tr.innerHTML = '<td class="cell-num">' + ((page - 1) * limit + i + 1) + '</td>' +
-                        '<td class="fw-semibold">' + window.esc(f.code || '') + '</td>' +
-                        '<td class="text-truncate" style="max-width: 320px;" title="' + window.esc(f.url || '') + '">' + window.esc(f.url || '') + '</td>' +
-                        '<td>' + (f.active ? '<span class="badge badge-soft-success">Activo</span>' : '<span class="badge badge-soft-secondary">Inactivo</span>') + '</td>' +
-                        '<td class="text-end"><div class="dropdown">' +
+                        '<td data-label="Código" class="fw-semibold">' + window.esc(f.code || '') + '</td>' +
+                        '<td data-label="Firma" class="text-truncate" style="max-width: 320px;" title="' + window.esc(f.url || '') + '">' + window.esc(f.url || '') + '</td>' +
+                        '<td data-label="Estado">' + (f.active ? '<span class="badge badge-soft-success">Activo</span>' : '<span class="badge badge-soft-secondary">Inactivo</span>') + '</td>' +
+                        '<td data-label="" class="text-end"><div class="dropdown">' +
                         '<button class="dropdown-actions" data-dd-toggle><i class="bi bi-three-dots-vertical"></i></button>' +
                         '<ul class="dropdown-menu dropdown-menu-end" data-dd-menu>' +
                         '<li><a class="dropdown-item" href="#" data-edit="' + f.id + '"><i class="bi bi-pencil"></i> Editar</a></li>' +

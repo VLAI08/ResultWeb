@@ -438,6 +438,46 @@
             .modal-dialog { margin: .5rem; }
             .btn { min-height: 40px; }
             .greeting-hero { padding: 1.2rem 1.2rem; }
+            /* Estrella flotante estorbante en móvil (el topbar ya tiene Califícanos).
+               El ancla lleva display:flex inline → requiere !important. */
+            .float { display: none !important; }
+            /* Topbar móvil: esconder el texto/botón Califícanos y truncar el usuario */
+            .topbar .btn-light { display: none; }
+            .topbar .ms-auto { min-width: 0; }
+            .topbar .avatar-circle { width: 34px; height: 34px; font-size: .72rem; }
+            .topbar .dropdown > .btn > span:last-of-type { display: none !important; }
+            .topbar .gap-3 { gap: .6rem !important; }
+            /* Encabezados de módulo: envolver filtros/botones */
+            .card-header .d-flex, .card-header .row { flex-wrap: wrap; }
+            .card-header .input-group-icon { width: 100% !important; }
+            /* ===== Tablas como tarjetas apiladas (modelo móvil) ===== */
+            .table-responsive { overflow-x: hidden; }
+            .table-responsive table.mob-cards { display: block; }
+            table.mob-cards thead, table.mob-cards thead th { display: none; }
+            table.mob-cards tbody { display: block; }
+            table.mob-cards tbody tr {
+                display: block; background: #fff; border: 1px solid var(--line);
+                border-radius: 12px; margin: 0 .1rem .7rem; padding: .3rem 0; box-shadow: none;
+                animation: none;
+            }
+            table.mob-cards tbody tr.skeleton-row { border: 0; margin: 0; }
+            table.mob-cards tbody td {
+                display: flex; align-items: center; justify-content: space-between; gap: .75rem;
+                border: 0 !important; padding: .42rem .8rem; background: transparent !important;
+                text-align: right; position: relative;
+            }
+            table.mob-cards td[data-label]::before {
+                content: attr(data-label);
+                color: var(--muted); font-size: .72rem; font-weight: 700;
+                text-transform: uppercase; letter-spacing: .06em;
+                text-align: left; flex-shrink: 0;
+            }
+            table.mob-cards td.cell-num { display: none; }
+            table.mob-cards td:last-child { justify-content: flex-end; }
+            table.mob-cards td .person-cell { justify-content: flex-start; flex: 1; min-width: 0; }
+            .dark-mode table.mob-cards tbody tr { background: var(--ink-800); border-color: #1B4A63; }
+            .dark-mode table.mob-cards tbody tr.skeleton-row { background: transparent; }
+            .dark-mode table.mob-cards td[data-label]::before { color: #7E9DAE; }
         }
         @media (hover: none) and (pointer: coarse) {
             .btn, .dropdown-actions, .page-link { min-height: 44px; }
