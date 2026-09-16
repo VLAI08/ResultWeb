@@ -21,6 +21,7 @@ class ResultsService
         private DomainsService $domainsService,
         private FirmsService $firmsService,
         private UsersService $usersService,
+        private \Psr\Log\LoggerInterface $logger,
     ) {
     }
 
@@ -541,8 +542,8 @@ class ResultsService
     {
         $cell = '#3276b1;';
         $fontColor = 'black';
-        $header = $this->fileToBase64($this->publicPath('static/images/header.jpg'));
-        $footer = $this->fileToBase64($this->publicPath('static/images/footer.jpg'));
+        $header = $this->imageBase64Optimized($this->publicPath('static/images/header.jpg'));
+        $footer = $this->imageBase64Optimized($this->publicPath('static/images/footer.jpg'));
 
         $user = $this->usersService->findUserByClientCode($clientCode);
         if ($user && $clientCode) {
@@ -552,10 +553,10 @@ class ResultsService
                 $headerPath = $this->usersService->resolveUploadPath($user->getUrlimg());
                 $footerPath = $this->usersService->resolveUploadPath($user->getFooter());
                 if ($headerPath) {
-                    $header = $this->fileToBase64($headerPath);
+                    $header = $this->imageBase64Optimized($headerPath);
                 }
                 if ($footerPath) {
-                    $footer = $this->fileToBase64($footerPath);
+                    $footer = $this->imageBase64Optimized($footerPath);
                 }
             } elseif ($logo === 'sin_logo') {
                 $header = $this->fileToBase64($this->publicPath('static/images/none.jpg'));
@@ -633,5 +634,58 @@ class ResultsService
         }
         $mime = (string) mime_content_type($path);
         return 'data:' . $mime . ';base64,' . base64_encode((string) file_get_contents($path));
+    }
+
+    /**
+     * Base64 optimizado de imágenes grandes (encabezado/pie del PDF).
+     * Antes → problema: los escaneos completos (~0.9MB c/u) subían el PDF a ~1.7MB por página-consultas lentas.
+     * Cambio: re-escala a ancho máx. 1000px y recomprime JPEG/PNG con GD al vuelo;
+     * si el resultado no es menor que el original, se usa el original.
+     * GD no disponible → fallback al base64 completo (comportamiento previo).
+     */
+    private function imageBase64Optimized(string $path, int $maxWidth = 1000, int $quality = 74): string
+    {
+        if (!is_file($path)) {
+            $path = $this->publicPath('static/images/none.jpg');
+        }
+        if (!function_exists('imagecreatefromjpeg')) {
+            return $this->fileToBase64($path);
+        }
+        set_error_handler(static function (): bool { return true; });
+        try {
+            $mime = (string) mime_content_type($path);
+            $isPng = str_contains($mime, 'png');
+            $src = $isPng ? imagecreatefrompng($path) : imagecreatefromjpeg($path);
+            if (!$src) {
+                return $this->fileToBase64($path);
+            }
+            if (imagesx($src) > $maxWidth) {
+                $scaled = imagescale($src, $maxWidth, -1, IMG_BICUBIC);
+                if ($scaled !== false) {
+                    imagedestroy($src);
+                    $src = $scaled;
+                }
+            }
+            if ($isPng) {
+                imagealphablending($src, false);
+                imagesavealpha($src, true);
+            }
+            ob_start();
+            $ok = $isPng ? imagepng($src, null, 6) : imagejpeg($src, null, $quality);
+            $data = (string) ob_get_clean();
+            imagedestroy($src);
+            restore_error_handler();
+            if (!$ok || $data === '') {
+                return $this->fileToBase64($path);
+            }
+            // Solo si de verdad optimizó (evita crecer en imágenes ya pequeñas)
+            if (strlen($data) >= (int) filesize($path)) {
+                return $this->fileToBase64($path);
+            }
+            return 'data:image/' . ($isPng ? 'png' : 'jpeg') . ';base64,' . base64_encode($data);
+        } catch (\Throwable $e) {
+            restore_error_handler();
+            return $this->fileToBase64($path);
+        }
     }
 }

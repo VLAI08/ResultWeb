@@ -17,6 +17,7 @@ class ResultsController extends AbstractController
         private ResultsService $results,
         private FtpService $ftpService,
         private PdfService $pdfService,
+        private \Psr\Log\LoggerInterface $logger,
     ) {
     }
 
@@ -64,7 +65,7 @@ class ResultsController extends AbstractController
         $typeDoc = (string) $request->query->get('type_doc', '');
 
         if (($user['type'] ?? 'person') === 'person') {
-            // Antes → problema (IDOR): los parámetros de consulta anulaban la identidad
+            // Antes �  problema (IDOR): los parámetros de consulta anulaban la identidad
             // de sesión y un paciente podía listar las solicitudes de otra persona.
             // Cambio: para pacientes la identidad SIEMPRE es la de la sesión.
             $identification = (string) ($user['identification'] ?? '');
@@ -81,6 +82,7 @@ class ResultsController extends AbstractController
         try {
             $rows = $this->results->findByIdentification($identification, $typeDoc, $isPatient);
         } catch (\Throwable $e) {
+            $this->logger->error('resultCrud: error consultando solicitudes desde WinsisLab', ['error' => $e->getMessage()]);
             return $this->json(['total_count' => 0, 'items' => [], 'error' => 'Error consultando las solicitudes']);
         }
         return $this->json(['total_count' => count($rows), 'items' => $rows]);
@@ -125,6 +127,7 @@ class ResultsController extends AbstractController
                 $request->query->get('end_date'),
             );
         } catch (\Throwable $e) {
+            $this->logger->error('labsSearch: error en la busqueda de pacientes', ['error' => $e->getMessage()]);
             return $this->json(['total_count' => 0, 'items' => [], 'error' => 'Error consultando los resultados']);
         }
         return $this->json(['total_count' => count($rows), 'items' => $rows]);
@@ -152,6 +155,7 @@ class ResultsController extends AbstractController
         try {
             $detail = $this->results->findByRequest($requestCode, $isPatient, $prevalidated);
         } catch (\Throwable $e) {
+            $this->logger->error('detail: error consultando el resultado de la solicitud', ['error' => $e->getMessage()]);
             return $this->json(['message' => 'Error consultando el resultado'], 500);
         }
         if (!$detail) {
@@ -179,6 +183,7 @@ class ResultsController extends AbstractController
                 (string) ($user['code'] ?? '')
             );
         } catch (\Throwable $e) {
+            $this->logger->error('dashboard: error calculando estadisticas', ['error' => $e->getMessage()]);
             return $this->json(['error' => 'Error consultando el dashboard'], 500);
         }
         return $this->json($stats);
@@ -204,6 +209,7 @@ class ResultsController extends AbstractController
         try {
             $ok = $this->results->isPaid($solicitud);
         } catch (\Throwable $e) {
+            $this->logger->error('valid_result: error validando pago', ['error' => $e->getMessage()]);
             return $this->json(['success' => false, 'state' => -1, 'msg' => 'Error validando pago']);
         }
         if (!$ok) {
@@ -257,6 +263,7 @@ class ResultsController extends AbstractController
                     }
                 }
             } catch (\Throwable $e) {
+                $this->logger->error('pdf: falla descarga FTP, se genera localmente', ['error' => $e->getMessage()]);
                 // Si falla FTP, se genera localmente
             }
         }
@@ -269,6 +276,7 @@ class ResultsController extends AbstractController
             $pdf = $this->pdfService->render($detail);
             return $this->pdfResponse($pdf, $requestCode . '.pdf');
         } catch (\Throwable $e) {
+            $this->logger->error('pdf: error generando el PDF', ['error' => $e->getMessage()]);
             return $this->json(['message' => 'Error generando el PDF'], 500);
         }
     }
