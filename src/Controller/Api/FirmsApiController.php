@@ -18,8 +18,12 @@ class FirmsApiController extends ApiBaseController
     #[Route('', name: 'api_firms_list', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
-        if (!$this->requireSession($request)) {
+        $user = $this->requireSession($request);
+        if (!$user) {
             return $this->unauthorized();
+        }
+        if (!$this->hasAction($user, 'firmas')) {
+            return $this->forbidden();
         }
         $data = $this->firms->findAll(
             $request->query->getInt('page', 1),
@@ -32,8 +36,12 @@ class FirmsApiController extends ApiBaseController
     #[Route('/{id}', name: 'api_firms_get', methods: ['GET'])]
     public function show(Request $request, int $id): JsonResponse
     {
-        if (!$this->requireSession($request)) {
+        $user = $this->requireSession($request);
+        if (!$user) {
             return $this->unauthorized();
+        }
+        if (!$this->hasAction($user, 'firmas')) {
+            return $this->forbidden();
         }
         $firm = $this->firms->find($id);
         if (!$firm) {
@@ -45,8 +53,12 @@ class FirmsApiController extends ApiBaseController
     #[Route('', name: 'api_firms_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        if (!$this->requireSession($request)) {
+        $user = $this->requireSession($request);
+        if (!$user) {
             return $this->unauthorized();
+        }
+        if (!$this->hasAction($user, 'firmas')) {
+            return $this->forbidden();
         }
         $data = json_decode((string) $request->getContent(), true);
         if (!is_array($data)) {
@@ -64,8 +76,12 @@ class FirmsApiController extends ApiBaseController
     #[Route('/{id}', name: 'api_firms_update', methods: ['PUT', 'PATCH'])]
     public function update(Request $request, int $id): JsonResponse
     {
-        if (!$this->requireSession($request)) {
+        $user = $this->requireSession($request);
+        if (!$user) {
             return $this->unauthorized();
+        }
+        if (!$this->hasAction($user, 'firmas')) {
+            return $this->forbidden();
         }
         $data = json_decode((string) $request->getContent(), true);
         if (!is_array($data)) {
@@ -81,8 +97,12 @@ class FirmsApiController extends ApiBaseController
     #[Route('/{id}', name: 'api_firms_delete', methods: ['DELETE'])]
     public function delete(Request $request, int $id): JsonResponse
     {
-        if (!$this->requireSession($request)) {
+        $user = $this->requireSession($request);
+        if (!$user) {
             return $this->unauthorized();
+        }
+        if (!$this->hasAction($user, 'firmas')) {
+            return $this->forbidden();
         }
         $this->firms->deactivate($id);
         return $this->json(['success' => true]);

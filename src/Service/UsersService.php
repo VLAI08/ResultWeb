@@ -605,13 +605,24 @@ class UsersService
         return ['success' => true, 'user' => $u->toArray()];
     }
 
-    public function update(int $id, array $data): array
+    /**
+     * Actualiza un usuario. Con $restrictedFields=true (auto-servicio "Editar mis datos")
+     * solo se aceptan campos de información personal, jamás campos estructurales
+     * (code, type, type_admin, identification, estado, contraseña...).
+     * Antes → problema: cualquier campo del body se aplicaba (mass assignment).
+     * Cambio: mapa reducido para modo restringido y password ignorado en ese modo.
+     */
+    public function update(int $id, array $data, bool $restrictedFields = false): array
     {
         $user = $this->findUserById($id);
         if (!$user) {
             return ['success' => false, 'message' => 'Usuario no encontrado'];
         }
-        foreach ([
+        $map = $restrictedFields ? [
+            'names' => 'setNames', 'lastnames' => 'setLastnames', 'phones' => 'setPhones',
+            'email' => 'setEmail', 'contact' => 'setContact', 'phone_contact' => 'setPhoneContact',
+            'address' => 'setAddress',
+        ] : [
             'names' => 'setNames', 'lastnames' => 'setLastnames', 'phones' => 'setPhones',
             'email' => 'setEmail', 'contact' => 'setContact', 'phone_contact' => 'setPhoneContact',
             'address' => 'setAddress', 'sex' => 'setSex', 'code' => 'setCode',
@@ -619,15 +630,16 @@ class UsersService
             'type' => 'setType', 'download_options' => 'setDownloadOptions',
             'logo_options' => 'setLogoOptions', 'type_admin' => 'setTypeAdmin',
             'urlimg' => 'setUrlimg', 'footer' => 'setFooter',
-        ] as $field => $setter) {
+        ];
+        foreach ($map as $field => $setter) {
             if (array_key_exists($field, $data)) {
                 $user->{$setter}((string) $data[$field]);
             }
         }
-        if (array_key_exists('active', $data)) {
+        if (!$restrictedFields && array_key_exists('active', $data)) {
             $user->setActive((bool) $data['active']);
         }
-        if (array_key_exists('password', $data) && $data['password'] !== '') {
+        if (!$restrictedFields && array_key_exists('password', $data) && $data['password'] !== '') {
             $user->setPassword((string) $data['password']);
         }
         $this->persist($user);

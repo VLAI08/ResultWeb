@@ -373,6 +373,39 @@ class ResultsService
     }
 
     /**
+     * Verifica que una solicitud pertenezca al usuario de sesión:
+     * - paciente: la solicitud debe llevar su historia (número de documento).
+     * - empresa: el cliente de la solicitud debe estar entre sus códigos.
+     * - admin (identificación y códigos nulos): siempre true.
+     * Antes → problema (IDOR): detail/pdf/valid_result solo filtraban por código,
+     * permitiendo ver resultados de terceros.
+     */
+    public function assertOwnership(string $requestCode, ?string $ownerIdentification, ?array $clientCodes): bool
+    {
+        $where = 'pa.paciente_cod = :request_code';
+        $params = ['request_code' => $requestCode];
+        if ($ownerIdentification !== null && $ownerIdentification !== '') {
+            $where .= ' AND pa.historia = :owner_identification';
+            $params['owner_identification'] = $ownerIdentification;
+        }
+        if ($clientCodes !== null) {
+            $codes = array_values(array_filter(array_map('trim', explode(',', implode(',', $clientCodes))), 'strlen'));
+            if ($codes) {
+                $in = implode(',', array_map(static fn (string $c): string => "'" . addcslashes($c, "'\\") . "'", $codes));
+                $where .= ' AND pa.clte_codigo IN (' . $in . ')';
+            } else {
+                return false;
+            }
+        }
+        try {
+            $row = $this->beta()->fetchAssociative("SELECT 1 FROM paciente pa WHERE $where LIMIT 1", $params);
+        } catch (\Throwable $e) {
+            return false;
+        }
+        return (bool) $row;
+    }
+
+    /**
      * Valida que la solicitud esté al día con el pago (vr_total o copago).
      */
     public function isPaid(string $requestCode): bool

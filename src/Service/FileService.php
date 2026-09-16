@@ -48,7 +48,8 @@ class FileService
             @mkdir($dir, 0775, true);
         }
         $extension = strtolower($file->getClientOriginalExtension() ?: 'png');
-        $safeExt = in_array($extension, ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'pdf'], true) ? $extension : 'png';
+        // 'svg' excluido a propósito: un SVG puede incluir <script> (XSS almacenado).
+        $safeExt = in_array($extension, ['png', 'jpg', 'jpeg', 'gif', 'webp', 'pdf'], true) ? $extension : 'png';
         $name = bin2hex(random_bytes(8)) . '.' . $safeExt;
         $file->move($dir, $name);
         return $folder . '/' . $name;

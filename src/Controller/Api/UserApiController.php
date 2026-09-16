@@ -18,8 +18,12 @@ class UserApiController extends ApiBaseController
     #[Route('', name: 'api_users_list', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
-        if (!$this->requireSession($request)) {
+        $user = $this->requireSession($request);
+        if (!$user) {
             return $this->unauthorized();
+        }
+        if (!$this->hasAction($user, 'gestionar_paciente')) {
+            return $this->forbidden();
         }
         $page = $request->query->getInt('page', 1);
         $limit = $request->query->has('recordPerPage')
@@ -38,8 +42,14 @@ class UserApiController extends ApiBaseController
     #[Route('/{id}', name: 'api_users_get', methods: ['GET'])]
     public function show(Request $request, int $id): JsonResponse
     {
-        if (!$this->requireSession($request)) {
+        $user = $this->requireSession($request);
+        if (!$user) {
             return $this->unauthorized();
+        }
+        // Antes → problema (IDOR): cualquier sesión podía leer fichas de cualquier usuario.
+        // Cambio: solo propietario o acción de gestión.
+        if (!$this->hasAction($user, 'gestionar_paciente') && (int) $id !== (int) ($user['id'] ?? 0)) {
+            return $this->forbidden();
         }
         $user = $this->users->findUserById($id);
         if (!$user) {
@@ -57,8 +67,12 @@ class UserApiController extends ApiBaseController
     #[Route('', name: 'api_users_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        if (!$this->requireSession($request)) {
+        $user = $this->requireSession($request);
+        if (!$user) {
             return $this->unauthorized();
+        }
+        if (!$this->hasAction($user, 'gestionar_paciente')) {
+            return $this->forbidden();
         }
         $data = json_decode((string) $request->getContent(), true);
         if (!is_array($data)) {
@@ -75,14 +89,20 @@ class UserApiController extends ApiBaseController
     #[Route('/{id}', name: 'api_users_update', methods: ['PUT', 'PATCH'])]
     public function update(Request $request, int $id): JsonResponse
     {
-        if (!$this->requireSession($request)) {
+        $user = $this->requireSession($request);
+        if (!$user) {
             return $this->unauthorized();
+        }
+        $isPrivileged = $this->hasAction($user, 'gestionar_paciente');
+        if (!$isPrivileged && (int) $id !== (int) ($user['id'] ?? 0)) {
+            // Un usuario solo puede editar su propia información
+            return $this->forbidden();
         }
         $data = json_decode((string) $request->getContent(), true);
         if (!is_array($data)) {
             return $this->json(['message' => 'JSON inválido'], Response::HTTP_BAD_REQUEST);
         }
-        $result = $this->users->update($id, $data);
+        $result = $this->users->update($id, $data, !$isPrivileged);
         if (!$result['success']) {
             return $this->json(['message' => $result['message']], Response::HTTP_NOT_FOUND);
         }
@@ -93,8 +113,12 @@ class UserApiController extends ApiBaseController
     #[Route('/{id}', name: 'api_users_delete', methods: ['DELETE'])]
     public function delete(Request $request, int $id): JsonResponse
     {
-        if (!$this->requireSession($request)) {
+        $user = $this->requireSession($request);
+        if (!$user) {
             return $this->unauthorized();
+        }
+        if (!$this->hasAction($user, 'gestionar_paciente')) {
+            return $this->forbidden();
         }
         $result = $this->users->deactivate($id);
         if (!$result['success']) {

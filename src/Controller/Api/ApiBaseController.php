@@ -34,4 +34,20 @@ abstract class ApiBaseController extends AbstractController
     {
         return $this->json(['message' => 'No autorizado'], 401);
     }
+
+    protected function forbidden(): JsonResponse
+    {
+        return $this->json(['message' => 'No tienes permisos para esta acción'], 403);
+    }
+
+    /**
+     * ¿El usuario de sesión tiene la acción (o es admin)?
+     */
+    protected function hasAction(array $user, string $action): bool
+    {
+        if (($user['type'] ?? '') === 'admin') {
+            return true;
+        }
+        return in_array($action, (array) ($user['actions'] ?? []), true);
+    }
 }

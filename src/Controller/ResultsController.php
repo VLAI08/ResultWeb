@@ -27,6 +27,29 @@ class ResultsController extends AbstractController
     }
 
     /**
+     * Devuelve [ownerIdentification, clientCodes] según el perfil de sesión
+     * para el escrutinio de propiedad (ver ResultsService::assertOwnership).
+     * - person: por historia (identificación)
+     * - company: por códigos de cliente
+     * - admin: sin restricción
+     */
+    private function ownershipScope(?array $user): array
+    {
+        if (!$user) {
+            return [null, null];
+        }
+        $type = (string) ($user['type'] ?? 'person');
+        if ($type === 'person') {
+            return [(string) ($user['identification'] ?? ''), null];
+        }
+        if ($type === 'company') {
+            $codes = array_filter(array_map('trim', explode(',', (string) ($user['code'] ?? ''))), 'strlen');
+            return [null, $codes ?: []];
+        }
+        return [null, null];
+    }
+
+    /**
      * Lista de solicitudes del paciente (mis resultados).
      * GET: identification, type_doc
      */
@@ -40,7 +63,13 @@ class ResultsController extends AbstractController
         $identification = (string) $request->query->get('identification', '');
         $typeDoc = (string) $request->query->get('type_doc', '');
 
-        if (!$identification || !$typeDoc) {
+        if (($user['type'] ?? 'person') === 'person') {
+            // Antes → problema (IDOR): los parámetros de consulta anulaban la identidad
+            // de sesión y un paciente podía listar las solicitudes de otra persona.
+            // Cambio: para pacientes la identidad SIEMPRE es la de la sesión.
+            $identification = (string) ($user['identification'] ?? '');
+            $typeDoc = (string) ($user['identificationtype'] ?? 'CC');
+        } elseif (!$identification || !$typeDoc) {
             $identification = (string) ($user['identification'] ?? '');
             $typeDoc = (string) ($user['identificationtype'] ?? 'CC');
         }
@@ -67,6 +96,10 @@ class ResultsController extends AbstractController
         $user = $this->sessionUser($request);
         if (!$user) {
             return $this->json(['message' => 'No autorizado'], 401);
+        }
+        if (($user['type'] ?? 'person') === 'person') {
+            // La búsqueda global de pacientes es acción de empresa/admin
+            return $this->json(['message' => 'No tienes permisos para esta acción'], 403);
         }
         $isAdmin = ($user['type'] ?? '') === 'admin';
         $clientCodes = $isAdmin ? null : (string) ($user['code'] ?? '');
@@ -111,6 +144,11 @@ class ResultsController extends AbstractController
         $prevalidated = $request->query->has('prevalidated')
             ? in_array((string) $request->query->get('prevalidated'), ['1', 'true'], true)
             : null;
+        [$ownerIdentification, $clientCodes] = $this->ownershipScope($user);
+        if (!$this->results->assertOwnership($requestCode, $ownerIdentification, $clientCodes)) {
+            // Solución IDOR: la solicitud debe pertenecer a la sesión
+            return $this->json(['message' => 'No se encontraron resultados para esta solicitud'], 404);
+        }
         try {
             $detail = $this->results->findByRequest($requestCode, $isPatient, $prevalidated);
         } catch (\Throwable $e) {
@@ -159,6 +197,10 @@ class ResultsController extends AbstractController
         if (!$solicitud) {
             return $this->json(['success' => false, 'state' => -1, 'msg' => 'Solicitud inválida']);
         }
+        [$ownerIdentification, $clientCodes] = $this->ownershipScope($this->sessionUser($request));
+        if (!$this->results->assertOwnership($solicitud, $ownerIdentification, $clientCodes)) {
+            return $this->json(['success' => true, 'state' => 3, 'msg' => 'No puede descargar este resultado']);
+        }
         try {
             $ok = $this->results->isPaid($solicitud);
         } catch (\Throwable $e) {
@@ -182,6 +224,11 @@ class ResultsController extends AbstractController
             return $this->json(['message' => 'No autorizado'], 401);
         }
         $isPatient = ($user['type'] ?? 'person') === 'person';
+
+        [$ownerIdentification, $clientCodes] = $this->ownershipScope($user);
+        if (!$this->results->assertOwnership($requestCode, $ownerIdentification, $clientCodes)) {
+            return $this->json(['message' => 'No se encontraron resultados para esta solicitud'], 404);
+        }
 
         // Validación de pago para pacientes
         if ($isPatient) {

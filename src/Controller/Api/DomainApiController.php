@@ -18,8 +18,12 @@ class DomainApiController extends ApiBaseController
     #[Route('', name: 'api_domains_list', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
-        if (!$this->requireSession($request)) {
+        $user = $this->requireSession($request);
+        if (!$user) {
             return $this->unauthorized();
+        }
+        if (!$this->hasAction($user, 'gestionar_parametros')) {
+            return $this->forbidden();
         }
         $page = $request->query->getInt('page', 1);
         $limit = $request->query->has('recordPerPage')
@@ -38,8 +42,12 @@ class DomainApiController extends ApiBaseController
     #[Route('/by-name/{name}', name: 'api_domains_by_name', methods: ['GET'])]
     public function byName(Request $request, string $name): JsonResponse
     {
-        if (!$this->requireSession($request)) {
+        $user = $this->requireSession($request);
+        if (!$user) {
             return $this->unauthorized();
+        }
+        if (!$this->hasAction($user, 'gestionar_parametros')) {
+            return $this->forbidden();
         }
         return $this->json($this->domains->findActivesByName($name));
     }
@@ -47,8 +55,12 @@ class DomainApiController extends ApiBaseController
     #[Route('/{id}', name: 'api_domains_get', methods: ['GET'])]
     public function show(Request $request, int $id): JsonResponse
     {
-        if (!$this->requireSession($request)) {
+        $user = $this->requireSession($request);
+        if (!$user) {
             return $this->unauthorized();
+        }
+        if (!$this->hasAction($user, 'gestionar_parametros')) {
+            return $this->forbidden();
         }
         $domain = $this->domains->find($id);
         if (!$domain) {
@@ -60,8 +72,12 @@ class DomainApiController extends ApiBaseController
     #[Route('', name: 'api_domains_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        if (!$this->requireSession($request)) {
+        $user = $this->requireSession($request);
+        if (!$user) {
             return $this->unauthorized();
+        }
+        if (!$this->hasAction($user, 'gestionar_parametros')) {
+            return $this->forbidden();
         }
         $data = json_decode((string) $request->getContent(), true);
         if (!is_array($data)) {
@@ -74,8 +90,12 @@ class DomainApiController extends ApiBaseController
     #[Route('/{id}', name: 'api_domains_update', methods: ['PUT', 'PATCH'])]
     public function update(Request $request, int $id): JsonResponse
     {
-        if (!$this->requireSession($request)) {
+        $user = $this->requireSession($request);
+        if (!$user) {
             return $this->unauthorized();
+        }
+        if (!$this->hasAction($user, 'gestionar_parametros')) {
+            return $this->forbidden();
         }
         $data = json_decode((string) $request->getContent(), true);
         if (!is_array($data)) {
@@ -91,8 +111,12 @@ class DomainApiController extends ApiBaseController
     #[Route('/{id}', name: 'api_domains_delete', methods: ['DELETE'])]
     public function delete(Request $request, int $id): JsonResponse
     {
-        if (!$this->requireSession($request)) {
+        $user = $this->requireSession($request);
+        if (!$user) {
             return $this->unauthorized();
+        }
+        if (!$this->hasAction($user, 'gestionar_parametros')) {
+            return $this->forbidden();
         }
         $this->domains->deactivate($id);
         return $this->json(['success' => true]);

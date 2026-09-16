@@ -4,85 +4,100 @@
     <meta charset="utf-8">
     <title>Resultados</title>
     <style>
+        {#
+            Modelo guía (réplica del "0C651565 - Sistema de guia" de la V2026):
+            1) Cada sección impresa es UNA PÁGINA propia que REPITE la ficha del paciente,
+               el código de barras y el encabezado de la tabla (como la guía de laboratorio).
+            2) @page con márgenes en todas las páginas (nada choca entre páginas).
+            3) Logo del cliente solo en la primera página; pie y firma al final de cada página.
+            4) Líneas de referencia (V.Ref, Método, Analizador…) como filas fusionadas
+               dentro de la tabla de la sección, sin repetir encabezados por fila.
+        #}
+        @page {
+            margin: 22px 20px 100px;
+        }
         * { box-sizing: border-box; }
         html, body {
-            font-family: 'Figtree', 'Segoe UI', 'Inter', -apple-system, 'Helvetica Neue', Arial, sans-serif;
-            font-size: 12px;
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 11px;
             color: #10222B;
             margin: 0; padding: 0;
         }
-        .content { position: relative; padding: 0 8px; }
-        .header-logo {
-            position: fixed; left: 0; top: 0; right: 0; height: 110px;
-            display: flex; align-items: center; justify-content: center;
-            background: #fff; border-bottom: 2px solid #CDE4EC; padding: 6px 12px;
-        }
-        .header-logo img { max-width: 100%; max-height: 96px; object-fit: contain; }
-        .footer-logo {
-            position: fixed; left: 0; bottom: 0; right: 0; height: 90px;
-            display: flex; align-items: center; justify-content: center;
-            background: #fff; border-top: 2px solid #CDE4EC; padding: 4px 12px;
-        }
-        .footer-logo img { max-width: 100%; max-height: 80px; object-fit: contain; }
+        .content { position: relative; }
+
+        /* Encabezado del cliente (solo primera página) */
+        .header-logo { text-align: center; padding: 2px 0 6px; }
+        .header-logo img { max-width: 100%; max-height: 96px; }
+
+        /* Pie fijado al borde inferior de todas las páginas (dompdf repite
+           elementos position:fixed en cada página) + @page guarda la banda inferior */
+        .footer-logo { position: fixed; bottom: 10px; left: 20px; right: 20px; text-align: center; page-break-inside: avoid; }
+        .footer-logo img { max-width: 100%; max-height: 62px; }
+
         .watermark {
-            position: fixed; top: 50%; left: 50%;
+            position: fixed; top: 45%; left: 50%;
             transform: translate(-50%, -50%) rotate(-45deg);
-            font-size: 90px; color: rgba(37, 99, 235, 0.06);
-            font-weight: 800; z-index: -1; text-align: center;
+            font-size: 84px; color: rgba(11, 79, 108, 0.07);
+            font-weight: bold; z-index: -1; text-align: center;
             width: 200%; white-space: nowrap; letter-spacing: .05em;
         }
-        .patient-box {
-            width: 100%; border-collapse: collapse; margin-top: 118px;
-            background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;
-        }
-        .patient-box td { padding: 5px 8px; border-bottom: 1px solid #eef2f7; vertical-align: top; }
-        .patient-box tr:last-child td { border-bottom: none; }
-        .patient-box .field { color: #64748b; font-size: 9px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; width: 90px; white-space: nowrap; }
-        .patient-box .label { color: #0f172a; font-weight: 600; }
-        .seccion-title {
-            margin: 14px 0 8px; font-weight: 700; font-size: 15px; color: #0B4F6C;
-            padding-bottom: 5px; border-bottom: 2px solid #CDE4EC; text-transform: uppercase; letter-spacing: .03em;
-        }
-        .exam-block { margin-bottom: 14px; page-break-inside: avoid; }
-        .exam-name {
-            font-weight: 700; font-size: 12.5px; color: #0f172a; margin-bottom: 4px;
-        }
-        .exam-meta { font-size: 9.5px; color: #64748b; margin-bottom: 4px; }
-        .result-table { width: 100%; border-collapse: collapse; margin: 2px 0 6px; }
-        .result-table th {
-            background: #0f172a; color: #fff; font-size: 9.5px; font-weight: 600;
-            text-align: left; padding: 5px 8px; text-transform: uppercase; letter-spacing: .04em;
-        }
-        .result-table td { padding: 5px 8px; border-bottom: 1px solid #e2e8f0; font-size: 11px; vertical-align: top; }
-        .result-table tr:nth-child(even) td { background: #f8fafc; }
-        .analito { width: 34%; font-weight: 500; }
-        .result { width: 14%; font-weight: 700; color: #0f172a; }
-        .units, .min, .mid, .max { width: 12%; color: #475569; }
-        .descriptive-section { margin-bottom: 16px; page-break-inside: avoid; }
-        .descriptive-title { font-weight: 700; font-size: 13px; color: #0B4F6C; margin-bottom: 6px; }
-        .descriptive-text { font-size: 11.5px; color: #0f172a; line-height: 1.55; white-space: pre-line; padding: 8px; background: #f8fafc; border: 1px solid #eef2f7; border-radius: 6px; }
-        .signature {
-            margin-top: 26px; text-align: right; page-break-inside: avoid;
-        }
-        .signature img { max-width: 320px; max-height: 120px; object-fit: contain; }
-        .signature-line { border-top: 1px solid #94a3b8; width: 280px; margin-top: 4px; }
-        .signature-name { font-size: 11px; color: #334155; margin-top: 4px; }
-        .barcode { margin: 18px 0 4px; text-align: left; page-break-inside: avoid; }
-        .barcode img { max-width: 260px; }
-        .print { page-break-after: always; }
-        .print:last-of-type { page-break-after: auto; }
-        .detail-result { page-break-inside: avoid; }
-        .fechas { margin-top: 6px; font-size: 9.5px; color: #64748b; }
-        .fechas span { margin-right: 18px; }
-        .fechas .line-botton { font-weight: 600; color: #334155; }
+
+        /* Ficha del paciente que se repite en cada página de sección */
+        .patient-wrap { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 4px; table-layout: fixed; page-break-inside: avoid; }
+        .patient-wrap td { padding: 4px 7px; vertical-align: top; }
+        .patient-wrap .field { color: #4a6570; font-size: 8.5px; text-transform: uppercase; letter-spacing: .04em; font-weight: bold; white-space: nowrap; }
+        .patient-wrap .label { color: #10222b; font-weight: bold; }
+        .patient-box { border: 1px solid #9db8c6; }
+        .company-head { background: #eef4f8; font-weight: bold; font-size: 13px; color: #10222b; padding: 7px 8px; border-bottom: 1px solid #9db8c6; }
+        .row-sep td { border-bottom: 1px solid #dbe7ee; }
+        .barcode-cell { width: 148px; vertical-align: middle; border-left: 1px solid #9db8c6; padding: 5px; }
+        .barcode-cell img { max-width: 100%; }
+        .barcode-code { font-family: Courier, monospace; font-size: 8px; color: #10222b; letter-spacing: .4px; }
+
         .prevalidated-badge {
-            display: inline-block; margin: 8px 0; padding: 3px 12px; border-radius: 20px;
-            background: #fef3c7; color: #92400e; font-size: 10px; font-weight: 700;
+            display: inline-block; margin: 4px 0 0; padding: 2px 12px; border-radius: 20px;
+            background: #fef3c7; color: #92400e; font-size: 9px; font-weight: bold;
             text-transform: uppercase; letter-spacing: .06em; border: 1px solid #fcd34d;
         }
-        @media print {
-            .header-logo, .footer-logo { position: fixed; }
+
+        /* Título de sección estilo guía */
+        .seccion-title {
+            margin: 8px 0 0; font-weight: bold; font-size: 12.5px; color: #10222b;
+            page-break-after: avoid;
         }
+        /* Cada página de la guía inicia en página nueva */
+        .new-page { page-break-before: always; }
+
+        /* Tabla única por sección */
+        table.result-table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 3px 0 2px; }
+        table.result-table th {
+            background: #0b4f6c; color: #fff; font-size: 8.5px; font-weight: bold;
+            text-align: left; padding: 4px 8px; text-transform: uppercase; letter-spacing: .04em;
+        }
+        table.result-table td { padding: 3.5px 7px; font-size: 10.5px; vertical-align: top; color: #10222b; }
+        th.c-analito { width: 44%; }
+        th.c-result { width: 15%; }
+        th.c-units { width: 13%; }
+        th.c-ref { width: 28%; }
+        tr.group-row td { border: 0; padding-top: 6px; font-weight: bold; color: #10222b; }
+        tr.data-row td { border-bottom: 1px solid #e6eef2; }
+        tr.data-row:nth-child(odd) td { background: #f7fafc; }
+        td.analito { font-weight: bold; }
+        td.result { font-weight: bold; }
+        td.units, td.vref { color: #3a5560; }
+        tr.ref-row td { color: #3a5560; padding-top: 2px; padding-bottom: 3px; border: 0; }
+        tr.exam-meta td { text-align: center; font-size: 9.5px; color: #10222b; font-weight: bold; text-decoration: underline; padding-top: 8px; padding-bottom: 4px; border: 0; }
+        tr.exam-meta .sep { display: inline-block; width: 18px; }
+        tr.ima-row td { color: #3a5560; font-size: 10px; }
+
+        .descriptive-title { font-weight: bold; font-size: 12px; color: #0b4f6c; margin: 8px 0 4px; }
+        .descriptive-text { font-size: 10.5px; color: #10222b; line-height: 1.5; white-space: pre-line; padding: 7px 9px; background: #f6fafb; border: 1px solid #dfeaf0; page-break-inside: avoid; }
+
+        /* Firma anclada a la página: una por sección, justo encima de la banda del pie.
+           dompdf pinta cada firma en la página de su sección (verificado). */
+        .signature { position: absolute; bottom: 112px; right: 16px; text-align: right; }
+        .signature img { max-width: 300px; max-height: 120px; }
+        .signature-line { border-top: 1px solid #8fa9b6; width: 270px; margin-left: auto; }
     </style>
 </head>
 <body>
@@ -90,84 +105,111 @@
     <div class="watermark">Validado Preliminar</div>
     {% endif %}
 
-    {% if detail.header is defined and detail.header %}
-    <div class="header-logo">
-        <img src="{{ detail.header }}" alt="">
-    </div>
-    {% endif %}
-
     <div class="content">
-        {% if detail.prevalidated is defined and detail.prevalidated %}
-        <span class="prevalidated-badge">Validado Preliminar</span>
-        {% endif %}
-
-        <table class="patient-box">
-            <tr>
-                <td class="field">Nombre</td><td class="label">{{ detail.patient_name }}</td>
-                <td class="field">Edad</td><td class="label">{{ detail.age }} {{ detail.age_unit }}</td>
-                <td class="field">Sexo</td><td class="label">{{ detail.sex }}</td>
-            </tr>
-            <tr>
-                <td class="field">Identificación</td><td class="label">{{ detail.identification_type }} {{ detail.identification_number }}</td>
-                <td class="field">Solicitud</td><td class="label">{{ detail.request_code }}</td>
-                <td class="field">Fecha</td><td class="label">{{ detail.reception_date }}</td>
-            </tr>
-            <tr>
-                <td class="field">Empresa</td><td class="label" colspan="3">{{ detail.client_name }}</td>
-                <td class="field">Teléfono</td><td class="label">{{ detail.phone }}</td>
-            </tr>
-        </table>
-
-        {% if detail.descriptive_texts is defined and detail.descriptive_texts %}
-        {% for dt in detail.descriptive_texts %}
-        <div class="descriptive-section">
-            <div class="descriptive-title">{{ dt.exam_name }}</div>
-            <div class="descriptive-text">{{ dt.descriptive_text }}</div>
-        </div>
-        {% endfor %}
-        {% endif %}
-
+        {# ===== Un PÁGINA por sección con ficha repetida (modelo guía V2026) ===== #}
         {% for section in detail.sections %}
-        <div class="print">
+        <div class="section {% if not loop.first %}new-page{% endif %}">
+            {% if detail.header is defined and detail.header %}
+            <div class="header-logo">
+                <img src="{{ detail.header }}" alt="">
+            </div>
+            {% endif %}
+
+            <table class="patient-wrap patient-box" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td class="company-head" colspan="5">Empresa: {{ detail.client_name }}</td>
+                    <td class="barcode-cell" rowspan="5">
+                        {% if barcode_img %}<img src="{{ barcode_img }}" alt="">{% endif %}
+                        <div class="barcode-code">{{ detail.barcode }}</div>
+                    </td>
+                </tr>
+                <tr class="row-sep">
+                    <td class="field" style="width:110px;">Orden Interna:</td>
+                    <td class="label">{{ detail.request_code }}</td>
+                    <td class="field" style="width:110px;">Fecha Ingreso:</td>
+                    <td class="label" colspan="2">{{ detail.reception_date }}</td>
+                </tr>
+                <tr class="row-sep">
+                    <td class="field">Identificación:</td>
+                    <td class="label">{{ detail.identification_type }} - {{ detail.identification_number }}</td>
+                    <td class="field">Fecha Impresión:</td>
+                    <td class="label" colspan="2">{{ detail.today }}</td>
+                </tr>
+                <tr class="row-sep">
+                    <td class="field">Nombre del Paciente:</td>
+                    <td class="label">{{ detail.patient_name }}</td>
+                    <td class="field">Empresa:</td>
+                    <td class="label" colspan="2">{{ detail.client_name }}</td>
+                </tr>
+                <tr class="row-sep">
+                    <td class="field">Edad/Sexo:</td>
+                    <td class="label">{{ detail.age }} {{ detail.age_unit }} / {{ detail.sex }}</td>
+                    <td class="field">Medicos:</td>
+                    <td class="label" colspan="2">{{ detail.doctors }}</td>
+                </tr>
+                <tr>
+                    <td class="field">Teléfono:</td>
+                    <td class="label">{{ detail.phone }}</td>
+                    <td class="field">Exámenes:</td>
+                    <td class="label" colspan="2">{{ detail.exams }}</td>
+                </tr>
+            </table>
+
+            {% if detail.prevalidated is defined and detail.prevalidated %}
+            <span class="prevalidated-badge">Validado Preliminar</span>
+            {% endif %}
+
+            {# Textos descriptivos (exámenes tipo D): solo en la primera página de la guía #}
+            {% if loop.first and detail.descriptive_texts is defined and detail.descriptive_texts %}
+            {% for dt in detail.descriptive_texts %}
+            <div class="descriptive-section">
+                <div class="descriptive-title">{{ dt.exam_name }}</div>
+                <div class="descriptive-text">{{ dt.descriptive_text }}</div>
+            </div>
+            {% endfor %}
+            {% endif %}
+
             <div class="seccion-title">{{ section.name }}</div>
-            {% for exam in section.exams %}
-            <div class="exam-block">
-                <div class="exam-name">{{ exam.exam_name }}</div>
-                {% if exam.processing_date or exam.validation_date %}
-                <div class="exam-meta">
-                    {% if exam.processing_date is defined and exam.processing_date %}Procesado: {{ exam.processing_date }}{% if exam.processing_time is defined and exam.processing_time %} {{ exam.processing_time }}{% endif %}{% endif %}
-                    {% if exam.validation_date is defined and exam.validation_date %}{% if exam.processing_date %} &nbsp;|&nbsp; {% endif %}Validado: {{ exam.validation_date }}{% if exam.validation_time is defined and exam.validation_time %} {{ exam.validation_time }}{% endif %}{% endif %}
-                </div>
-                {% endif %}
-                {% for d in exam.details %}
-                <div class="detail-result">
-                    {% if detail.prevalidated is defined and detail.prevalidated and d.ima_result is defined and d.ima_result %}<p>{{ d.ima_result }}</p>{% endif %}
-                    <table class="result-table">
-                        <thead>
-                            <tr>
-                                <th class="analito">Analito</th>
-                                <th class="result">Resultado</th>
-                                <th class="units">Unidades</th>
-                                <th class="min">Mín</th>
-                                {% if d.mid is defined and d.mid %}<th class="mid">Medio</th>{% endif %}
-                                <th class="max">Máx</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
+
+            <table class="result-table" cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th class="c-analito">Analisis</th>
+                        <th class="c-result">Resultado</th>
+                        <th class="c-units">Unidades</th>
+                        <th class="c-ref">Valores de Referencia</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for exam in section.exams %}
+                    <tr class="group-row"><td colspan="4">{{ exam.exam_name }}</td></tr>
+                    {% if detail.prevalidated is defined and detail.prevalidated %}
+                        {% set shown = false %}
+                        {% for d in exam.details %}
+                            {% if d.ima_result is defined and d.ima_result and not shown %}
+                            <tr class="ima-row"><td colspan="4">{{ d.ima_result }}</td></tr>
+                                {% set shown = true %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                    {% for d in exam.details %}
+                        {% set is_ref = (d.result is defined and d.result == '') and (d.units is defined and d.units in ['', 'F', 'Q', 'V']) and (d.min is defined and d.min in ['', null]) and (d.max is defined and d.max in ['', null]) %}
+                        <tr class="{{ is_ref ? 'ref-row' : 'data-row' }}">
+                            {% if is_ref %}
+                                <td colspan="4">{{ d.analito }}</td>
+                            {% else %}
                                 <td class="analito">{{ d.analito }}</td>
                                 <td class="result">{{ d.result }}</td>
                                 <td class="units">{{ d.units }}</td>
-                                <td class="min">{{ d.min }}</td>
-                                {% if d.mid is defined and d.mid %}<td class="mid">{{ d.mid }}</td>{% endif %}
-                                <td class="max">{{ d.max }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                                <td class="vref">{% if d.min %}{{ d.min }}{% endif %}{% if d.min and d.max %} - {% endif %}{% if d.max %}{{ d.max }}{% endif %}</td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                    <tr class="exam-meta"><td colspan="4">{% if exam.processing_date %}Fecha procesado: {{ exam.processing_date }}{% if exam.processing_time %} {{ exam.processing_time }}{% endif %}{% endif %}{% if exam.validation_date %}{% if exam.processing_date %}<span class="sep"></span>{% endif %}Fecha validado: {{ exam.validation_date }}{% if exam.validation_time %} {{ exam.validation_time }}{% endif %}{% endif %}</td></tr>
                 {% endfor %}
-            </div>
-            {% endfor %}
+                </tbody>
+            </table>
+
             {% if section.signature is defined and section.signature %}
             <div class="signature">
                 <img src="{{ section.signature }}" alt="">
@@ -176,14 +218,10 @@
             {% endif %}
         </div>
         {% endfor %}
-
-        <div class="barcode">
-            {% if barcode_img %}
-            <img src="{{ barcode_img }}" alt="">
-            {% endif %}
-        </div>
     </div>
 
+    {# Barra de pie fija al borde inferior de TODAS las páginas (modelo V2026);
+       @page reserva 96px abajo para que el contenido nunca la toque. #}
     {% if detail.footer is defined and detail.footer %}
     <div class="footer-logo">
         <img src="{{ detail.footer }}" alt="">

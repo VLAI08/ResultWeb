@@ -32,7 +32,10 @@ class PdfService
         $options = new Options();
         $options->set('isRemoteEnabled', true);
         $options->set('isHtml5ParserEnabled', true);
-        $options->set('defaultFont', 'verdana');
+        // Antes → problema: 'verdana' no es fuente núcleo de dompdf (core: helvetica/times/courier)
+        // y el CSS pedía Figtree/Segoe UI (no embebibles) → caía a Times con métricas irregulares.
+        // Cambio: helvetica, fuente núcleo garantizada y estable.
+        $options->set('defaultFont', 'helvetica');
         $options->set('dpi', 96);
 
         $dompdf = new Dompdf($options);

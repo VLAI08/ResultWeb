@@ -25,9 +25,9 @@ class ClientsApiController extends ApiBaseController
     #[Route('', name: 'api_clients_list', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
-        if (!$this->requireSession($request)) {
-            return $this->unauthorized();
-        }
+        $user = $this->requireSession($request);
+        if (!$user) { return $this->unauthorized(); }
+        if (!$this->hasAction($user, 'gestionar_cliente')) { return $this->forbidden(); }
         $page = $request->query->getInt('page', 1);
         $limit = $request->query->has('recordPerPage')
             ? $request->query->getInt('recordPerPage', 10)
@@ -45,8 +45,12 @@ class ClientsApiController extends ApiBaseController
     #[Route('/{id}', name: 'api_clients_get', methods: ['GET'])]
     public function show(Request $request, int $id): JsonResponse
     {
-        if (!$this->requireSession($request)) {
+        $user = $this->requireSession($request);
+        if (!$user) {
             return $this->unauthorized();
+        }
+        if (!$this->hasAction($user, 'gestionar_cliente')) {
+            return $this->forbidden();
         }
         $user = $this->users->findUserById($id);
         if (!$user || ($user->getType() ?? '') !== 'company') {
@@ -64,8 +68,12 @@ class ClientsApiController extends ApiBaseController
     #[Route('', name: 'api_clients_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        if (!$this->requireSession($request)) {
+        $user = $this->requireSession($request);
+        if (!$user) {
             return $this->unauthorized();
+        }
+        if (!$this->hasAction($user, 'gestionar_cliente')) {
+            return $this->forbidden();
         }
         $data = $this->extractBody($request);
         if (!$data) {
@@ -96,11 +104,18 @@ class ClientsApiController extends ApiBaseController
         return $this->json($result['user'], Response::HTTP_CREATED);
     }
 
-    #[Route('/{id}', name: 'api_clients_update', methods: ['PATCH', 'PUT'])]
+    #[Route('/{id}', name: 'api_clients_update', methods: ['PATCH'])]
     public function update(Request $request, int $id): JsonResponse
     {
-        if (!$this->requireSession($request)) {
+        $user = $this->requireSession($request);
+        if (!$user) {
             return $this->unauthorized();
+        }
+        // Cliente puede editar su propia información; el resto exige 'gestionar_cliente'
+        $isPrivileged = $this->hasAction($user, 'gestionar_cliente');
+        $isSelf = (($user['type'] ?? '') === 'company') && (int) $id === (int) ($user['id'] ?? 0);
+        if (!$isPrivileged && !$isSelf) {
+            return $this->forbidden();
         }
         $data = $this->extractBody($request);
         if (!$data) {
@@ -127,7 +142,7 @@ class ClientsApiController extends ApiBaseController
             }
         }
 
-        $result = $this->users->update($id, $data);
+        $result = $this->users->update($id, $data, !$isPrivileged);
         if (!$result['success']) {
             return $this->json(['message' => $result['message']], Response::HTTP_NOT_FOUND);
         }
@@ -138,27 +153,41 @@ class ClientsApiController extends ApiBaseController
     #[Route('/{id}', name: 'api_clients_update_partial', methods: ['PUT'])]
     public function updatePartial(Request $request, int $id): JsonResponse
     {
-        if (!$this->requireSession($request)) {
+        $user = $this->requireSession($request);
+        if (!$user) {
             return $this->unauthorized();
+        }
+        // Auto-servicio del cliente: solo su propio registro y campos de información personal
+        $isPrivileged = $this->hasAction($user, 'gestionar_cliente');
+        $isSelf = (($user['type'] ?? '') === 'company') && (int) $id === (int) ($user['id'] ?? 0);
+        if (!$isPrivileged && !$isSelf) {
+            return $this->forbidden();
         }
         $data = $this->extractBody($request);
         if (!$data) {
             return $this->json(['message' => 'Body inválido'], Response::HTTP_BAD_REQUEST);
         }
-        // Replica UpdatePartialClientDto de V2026 ("Editar mis datos" del cliente)
+        // Lista blanca estricta: solo campos de información personal (replica UpdatePartialClientDto)
+        $whitelist = ['names' => true, 'phones' => true, 'email' => true, 'contact' => true, 'phone_contact' => true, 'address' => true];
+        $clean = [];
+        foreach ($whitelist as $field => $enabled) {
+            if (array_key_exists($field, $data)) {
+                $clean[$field] = (string) $data[$field];
+            }
+        }
         $map = [
-            'identificationNumber' => 'identification',
+            'identificationNumber' => 'identificationIgnore',
             'name' => 'names',
             'phone' => 'phones',
             'contactPhone' => 'phone_contact',
         ];
         foreach ($map as $from => $to) {
-            if (array_key_exists($from, $data) && !array_key_exists($to, $data)) {
-                $data[$to] = $data[$from];
+            if (array_key_exists($from, $data) && $to !== 'identificationIgnore' && !array_key_exists($to, $clean)) {
+                $clean[$to] = (string) $data[$from];
             }
         }
 
-        $result = $this->users->update($id, $data);
+        $result = $this->users->update($id, $clean, true);
         if (!$result['success']) {
             return $this->json(['message' => $result['message']], Response::HTTP_NOT_FOUND);
         }
@@ -169,8 +198,12 @@ class ClientsApiController extends ApiBaseController
     #[Route('/{id}', name: 'api_clients_delete', methods: ['DELETE'])]
     public function delete(Request $request, int $id): JsonResponse
     {
-        if (!$this->requireSession($request)) {
+        $user = $this->requireSession($request);
+        if (!$user) {
             return $this->unauthorized();
+        }
+        if (!$this->hasAction($user, 'gestionar_cliente')) {
+            return $this->forbidden();
         }
         $result = $this->users->deactivate($id);
         if (!$result['success']) {

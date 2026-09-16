@@ -190,6 +190,11 @@
                 items.forEach(function (u, i) {
                     var tr = document.createElement('tr');
                     var initial = (u.names || '?').trim().charAt(0).toUpperCase();
+                    // Detección de duplicados: misma identificación + tipo en más de una fila
+                    var dupKey = (u.identificationtype || '') + '|' + (u.identification || '');
+                    // Solo requiere badge si hay más de un registro activo con la misma llave
+                    tr.dataset.dupKey = dupKey;
+                    tr.dataset.rowIndex = i;
                     tr.innerHTML = '<td class="cell-num">' + ((page - 1) * limit + i + 1) + '</td>' +
                         '<td><div class="d-flex align-items-center gap-2"><span class="doc-chip">' + window.esc(u.identificationtype || '—') + '</span><span class="mono" style="font-size:.82rem;">' + window.esc(u.identification || '') + '</span></div></td>' +
                         '<td><div class="person-cell"><span class="person-avatar">' + window.esc(initial) + '</span><span><span class="pc-name">' + window.esc(u.names || '') + '</span><span class="pc-sub">' + window.esc(u.lastnames || '') + '</span></span></div></td>' +
@@ -203,6 +208,25 @@
                         (u.active ? '<li><a class="dropdown-item text-danger" href="#" data-delete="' + u.id + '"><i class="bi bi-x-circle"></i> Inactivar</a></li>' : '') +
                         '</ul></div></td>';
                     tbody.appendChild(tr);
+                });
+                // Marca los grupos con la misma llave (identificación+tipo) aparecidos 2+ veces
+                var dupCounts = {};
+                tbody.querySelectorAll('tr[data-dup-key]').forEach(function (row) {
+                    dupCounts[row.dataset.dupKey] = (dupCounts[row.dataset.dupKey] || 0) + 1;
+                });
+                tbody.querySelectorAll('tr[data-dup-key]').forEach(function (row) {
+                    var n = dupCounts[row.dataset.dupKey];
+                    if (n > 1) {
+                        var cell = row.querySelector('.person-cell > span:last-child');
+                        if (cell) {
+                            var b = document.createElement('span');
+                            b.className = 'badge badge-soft-warning ms-1';
+                            b.title = 'Existen ' + n + ' registros con esta identificación. Revise cuál consolidar (el sistema usa el mejor registro al iniciar sesión).';
+                            b.textContent = 'Duplicado ×' + n;
+                            cell.appendChild(b);
+                        }
+                        row.style.boxShadow = 'inset 3px 0 0 var(--amber)';
+                    }
                 });
                 renderPagination();
             })

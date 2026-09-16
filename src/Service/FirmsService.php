@@ -94,6 +94,9 @@ class FirmsService
 
     /**
      * Resuelve una ruta relativa de archivo (url de firms) al path real en public/.
+     * Si el archivo no existe localmente y hay un servidor espejo configurado
+     * (STATIC_MIRROR_URL, ej: la producción V2026), lo descarga UNA vez y lo cachea.
+     * Así los entornos locales muestran las firmas idénticas a la web actual.
      */
     public function resolvePath(string $url): ?string
     {
@@ -110,6 +113,60 @@ class FirmsService
         $alt = dirname(__DIR__, 2) . '/public/' . $url;
         if (is_file($alt)) {
             return $alt;
+        }
+        // Espejo: solo para firmas y solo si está configurado (evita fetch arbitrario)
+        if (str_starts_with($url, 'upload/firmas/')) {
+            return $this->mirrorFetch($url);
+        }
+        return null;
+    }
+
+    /**
+     * Descarga el asset desde el servidor espejo (producción) y lo guarda localmente.
+     * Antes → problema: sin los archivos físicos de firmas, el PDF usaba el
+     * placeholder none.jpg y las firmas no aparecían.
+     * Cambio: mirror-on-miss con caché local; solo se activa con STATIC_MIRROR_URL.
+     */
+    private function mirrorFetch(string $url): ?string
+    {
+        $base = (string) ($_ENV['STATIC_MIRROR_URL'] ?? $_SERVER['STATIC_MIRROR_URL'] ?? '');
+        if ($base === '' || !function_exists('curl_init')) {
+            return null;
+        }
+        $localPath = dirname(__DIR__, 2) . '/public/static/' . $url;
+        $dir = dirname($localPath);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0775, true);
+        }
+        if (!is_writable($dir)) {
+            return null;
+        }
+        $endpoint = $base . '/files?path=' . rawurlencode($url);
+        $ch = curl_init($endpoint);
+        if ($ch === false) {
+            return null;
+        }
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => [],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 8,
+            CURLOPT_FOLLOWLOCATION => false,
+            // El espejo sirve imágenes públicas; sin CA local provisional de Windows
+            // se valida por tipo MIME/marca de bytes, no por cadena de certificados.
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => 0,
+        ]);
+        $response = curl_exec($ch);
+        $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        $contentType = (string) curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+        curl_close($ch);
+        if ($response === false) {
+            return null;
+        }
+        if (($status === 200 || $status === 201) && str_starts_with($contentType, 'image/') && strlen($response) > 0) {
+            file_put_contents($localPath, $response);
+            return is_file($localPath) ? $localPath : null;
         }
         return null;
     }
