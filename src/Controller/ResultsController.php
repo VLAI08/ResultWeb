@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Controller\Concerns\SessionUserTrait;
 use App\Service\FtpService;
 use App\Service\PdfService;
 use App\Service\ResultsService;
@@ -13,18 +14,14 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class ResultsController extends AbstractController
 {
+    use SessionUserTrait;
+
     public function __construct(
         private ResultsService $results,
         private FtpService $ftpService,
         private PdfService $pdfService,
         private \Psr\Log\LoggerInterface $logger,
     ) {
-    }
-
-    private function sessionUser(Request $request): ?array
-    {
-        $user = $request->getSession()->get('user');
-        return is_array($user) ? $user : null;
     }
 
     /**

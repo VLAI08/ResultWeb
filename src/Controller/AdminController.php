@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Controller\Concerns\SessionUserTrait;
 use App\Service\DomainsService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -11,6 +12,8 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class AdminController extends AbstractController
 {
+    use SessionUserTrait;
+
     public function __construct(private DomainsService $domains)
     {
     }
@@ -30,23 +33,6 @@ class AdminController extends AbstractController
         'firmas' => 'signatures',
         'configuracion' => 'configuration',
     ];
-
-    private function sessionUser(Request $request): ?array
-    {
-        $user = $request->getSession()->get('user');
-        return is_array($user) ? $user : null;
-    }
-
-    private function userHasAction(?array $user, string $action): bool
-    {
-        if (!$user) {
-            return false;
-        }
-        if (($user['type'] ?? '') === 'admin') {
-            return true;
-        }
-        return in_array($action, (array) ($user['actions'] ?? []), true);
-    }
 
     private function renderModule(Request $request, string $view, string $requiredAction): Response
     {

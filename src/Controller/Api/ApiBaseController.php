@@ -2,6 +2,7 @@
 
 namespace App\Controller\Api;
 
+use App\Controller\Concerns\SessionUserTrait;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -12,11 +13,7 @@ use Symfony\Component\HttpFoundation\Request;
  */
 abstract class ApiBaseController extends AbstractController
 {
-    protected function sessionUser(Request $request): ?array
-    {
-        $user = $request->getSession()->get('user');
-        return is_array($user) ? $user : null;
-    }
+    use SessionUserTrait;
 
     /**
      * Devuelve el usuario de sesión o responde 401 (y retorna null).
@@ -37,17 +34,14 @@ abstract class ApiBaseController extends AbstractController
 
     protected function forbidden(): JsonResponse
     {
-        return $this->json(['message' => 'No tienes permisos para esta acción'], 403);
+        return $this->forbiddenAccess();
     }
 
     /**
-     * ¿El usuario de sesión tiene la acción (o es admin)?
+     * Alias coherente con los controladores que usan el trait directamente.
      */
     protected function hasAction(array $user, string $action): bool
     {
-        if (($user['type'] ?? '') === 'admin') {
-            return true;
-        }
-        return in_array($action, (array) ($user['actions'] ?? []), true);
+        return $this->userHasAction($user, $action);
     }
 }

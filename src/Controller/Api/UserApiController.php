@@ -39,6 +39,19 @@ class UserApiController extends ApiBaseController
         return $this->json(['content' => $data['items'], 'totalRecord' => $data['total_count']]);
     }
 
+    #[Route('/duplicates', name: 'api_users_duplicates', methods: ['GET'])]
+    public function duplicates(Request $request): JsonResponse
+    {
+        $user = $this->requireSession($request);
+        if (!$user) {
+            return $this->unauthorized();
+        }
+        if (!$this->hasAction($user, 'gestionar_paciente')) {
+            return $this->forbidden();
+        }
+        return $this->json(['items' => $this->users->findDuplicateGroups(150)]);
+    }
+
     #[Route('/{id}', name: 'api_users_get', methods: ['GET'])]
     public function show(Request $request, int $id): JsonResponse
     {

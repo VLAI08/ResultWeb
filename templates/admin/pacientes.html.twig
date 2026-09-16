@@ -47,6 +47,7 @@
                 <option value="1">Activos</option>
                 <option value="0">Inactivos</option>
             </select>
+            <button class="btn btn-sm btn-outline-warning" id="patients-dups" title="Reporte de pacientes duplicados"><i class="bi bi-people"></i> Duplicados</button>
             <button class="btn btn-sm btn-outline-secondary" id="patients-export" title="Exportar a Excel (CSV)"><i class="bi bi-file-earmark-excel"></i></button>
             <button class="btn btn-sm btn-primary" id="patients-new"><i class="bi bi-person-plus"></i> Nuevo</button>
         </div>
@@ -86,6 +87,33 @@
                 <ul class="pagination pagination-sm mb-0" id="patients-pagination"></ul>
             </div>
         </nav>
+    </div>
+</div>
+
+<!-- Modal reporte de duplicados -->
+<div class="modal fade" id="dups-modal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title"><span class="modal-icon"><i class="bi bi-people"></i></span>Pacientes duplicados</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div class="info-box small text-muted mb-2">
+                    Personas con <b>2+ registros activos</b> que comparten identificación y tipo de documento.
+                    El sistema usa el mejor registro al iniciar sesión; consolida inactivando el registro sobrante.
+                </div>
+                <div class="table-responsive" style="max-height: 55vh;">
+                    <table class="table table-hover mob-cards align-middle" id="dups-table">
+                        <thead class="v-heading">
+                            <tr><th>Identificación</th><th>Tipo</th><th>Registros</th><th>Paciente</th><th></th></tr>
+                        </thead>
+                        <tbody id="dups-tbody"></tbody>
+                    </table>
+                    <div class="text-center text-muted py-4" id="dups-empty"><span class="empty-state"><i class="bi bi-check-circle"></i>No hay duplicados activos. ¡Padrón limpio!</span></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -274,6 +302,38 @@
         });
     }
     loadStats();
+
+    // Reporte de pacientes duplicados (solo lectura)
+    var dupsModalEl = new bootstrap.Modal(document.getElementById('dups-modal'));
+    document.getElementById('patients-dups').addEventListener('click', function () {
+        var tbody = document.getElementById('dups-tbody');
+        tbody.innerHTML = '<tr class="skeleton-row"><td><div class="skeleton" style="width:70%"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton" style="width:50%"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td></tr>';
+        document.getElementById('dups-empty').classList.add('d-none');
+        window.apiFetch('/api/users/duplicates', { silent: true })
+            .then(function (res) {
+                var items = res.items || [];
+                tbody.innerHTML = '';
+                document.getElementById('dups-empty').classList.toggle('d-none', items.length > 0);
+                if (!items.length) { return; }
+                items.forEach(function (u) {
+                    var tr = document.createElement('tr');
+                    tr.innerHTML = '<td data-label="Identificación" class="mono fw-semibold">' + window.esc(u.identification) + '</td>' +
+                        '<td data-label="Tipo"><span class="doc-chip">' + window.esc(u.identificationtype || '') + '</span></td>' +
+                        '<td data-label="Registros"><span class="badge badge-soft-warning">×' + window.esc(u.total) + '</span></td>' +
+                        '<td>' + window.esc(u.names || '—') + '</td>' +
+                        '<td class="text-end"><button class="btn btn-sm btn-outline-primary" title="Ver estos registros en la lista"><i class="bi bi-funnel"></i> Ver</button></td>';
+                    tr.querySelector('button').addEventListener('click', function () {
+                        document.getElementById('patients-search').value = u.identification;
+                        page = 1;
+                        load();
+                        bootstrap.Modal.getInstance(document.getElementById('dups-modal')).hide();
+                    });
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(function () {});
+        dupsModalEl.show();
+    });
 
     document.getElementById('patients-empty-new').addEventListener('click', function () {
         document.getElementById('patients-new').click();

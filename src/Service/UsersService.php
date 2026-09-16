@@ -656,4 +656,34 @@ class UsersService
         $this->persist($user);
         return ['success' => true];
     }
+
+    /**
+     * Grupos de pacientes duplicados (misma identificación+tipo con 2+ registros activos).
+     * Antes → problema: el auto-registro histórico duplicó personas sin cruzar el tipo de
+     * documento y nadie podía detectarlas (solo el login elige el mejor registro).
+     * Cambio: reporte de solo-lectura, agrupado en la BD (nunca la modifica).
+     */
+    public function findDuplicateGroups(int $limit = 150): array
+    {
+        $rows = $this->alphaEm()->getConnection()->fetchAllAssociative(
+            "SELECT identification,
+                    identificationtype,
+                    COUNT(*) AS total,
+                    GROUP_CONCAT(id ORDER BY active DESC, id DESC) AS ids,
+                    MAX(names) AS names,
+                    MAX(lastnames) AS lastnames
+             FROM users
+             WHERE type = 'person'
+               AND active = 1
+               AND identification != ''
+             GROUP BY identification, identificationtype
+             HAVING total > 1
+             ORDER BY total DESC, identification ASC
+             LIMIT " . max(1, (int) $limit)
+        );
+        return array_map(static function (array $r): array {
+            $r['ids'] = array_values(array_filter(explode(',', (string) $r['ids']), 'strlen'));
+            return $r;
+        }, $rows);
+    }
 }
